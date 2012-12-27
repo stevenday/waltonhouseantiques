@@ -1,0 +1,14 @@
+name = Cloud Zoom
+description = Cloud Zoom (Professor Cloud) integration
+core = 6.x
+package = CCK
+
+dependencies[] = imagefield
+dependencies[] = imagecache
+
+; Information added by drupal.org packaging script on 2010-06-02
+version = "6.x-1.0"
+core = "6.x"
+project = "cloud_zoom"
+datestamp = "1275515705"
+

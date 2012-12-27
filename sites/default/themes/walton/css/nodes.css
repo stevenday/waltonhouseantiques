@@ -1,0 +1,246 @@
+/**
+ * @file
+ * Node Styling
+ *
+ * Style anything that isn't in the $content variable.
+ */
+
+
+.node /* Node wrapper */ {
+}
+
+.node-sticky /* A sticky node (displayed before others in a list) */ {
+}
+
+.node-unpublished /* Unpublished nodes */ {
+  /* background-color: #fff4f4; */ /* Drupal core uses a #fff4f4 background */
+}
+
+.node-unpublished div.unpublished,
+.comment-unpublished div.unpublished /* The word "Unpublished" displayed underneath the content. */ {
+  height: 0;
+  overflow: visible;
+  color: #d8d8d8;
+  font-size: 75px;
+  line-height: 1;
+  font-family: Impact, "Arial Narrow", Helvetica, sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  word-wrap: break-word; /* A very nice CSS3 property */
+}
+
+.node-by-viewer /* A node created by the current user */ {
+}
+
+.node-teaser /* A node displayed as teaser */ {
+}
+
+/* All nodes are given a node-type-FOO class that describes the type of
+ * content that it is. If you create a new content type called
+ * "my-custom-type", it will receive a "node-type-my-custom-type" class.
+ */
+.node-type-page /* Page content node */ {
+}
+
+.node-type-story /* Story content node */ {
+}
+
+.node h2.title /* Node title */ {
+}
+
+.marker /* "New" or "Updated" marker for content that is new or updated for the current user */ {
+  color: #c00;
+}
+
+.node .picture /* The picture of the node author */ {
+}
+
+.node.node-unpublished .picture,
+.comment.comment-unpublished .picture {
+  position: relative; /* Otherwise floated pictures will appear below the "Unpublished" text. */
+}
+
+.node .meta /* Wrapper for submitted and terms data */ {
+}
+
+.node .submitted /* The "posted by" information */ {
+}
+
+.node .terms /* Node terms (taxonomy) */ {
+}
+
+.node .content /* Node's content wrapper */ {
+}
+
+.node ul.links /* Node links. See also the ul.links declaration in the pages.css. */ {
+}
+
+.preview .node /* Preview of the content before submitting new or updated content */ {
+  /* background-color: #ffffea; */ /* Drupal core uses a #ffffea background */
+}
+
+
+/**
+ * Product nodes 
+ */
+
+ /* Layout */
+div.node-type-product {
+  padding-bottom:25px;
+  margin-bottom:25px;
+  border-bottom:7px solid #DCDB81
+}
+#product-left {
+  width:526px;
+  margin-right:20px;
+  float:left;
+  position:relative;
+}
+#product-right {
+ width:384px;
+ float:left;
+}
+#product-top-left {
+  width:306px;
+  margin-right:20px;
+  float:left;
+}
+#product-top-right {
+  width:200px;
+  float:left;
+  position:relative;
+}
+
+/* Terms */
+.node-type-product .terms li {
+  padding-right:0;
+  float:left;
+}
+.node-type-product .terms li.first {
+  padding-left:0;
+}
+.node-type-product .terms a {
+  background-color:#EAEBB2;
+  border:1px solid #666;
+  padding:2px 5px;
+  margin-bottom:5px;
+  font-size:0.85em;
+  color:#333;
+  display:inline-block;
+}
+
+/* Sharing links */
+.node-type-product .addthis_toolbox {
+  width:140px;
+  margin-left:60px;
+}
+.node-type-product .addthis_button_email {
+  width:140px;
+  font-size:0.85em;
+  margin-bottom:10px;
+}
+  .node-type-product .addthis_button_email span {
+    margin-left:25px;
+    margin-right:5px;
+  }
+.node-type-product .addthis_button_facebook_like {
+  overflow:hidden;
+  height:20px;
+  width:46px;
+}
+.node-type-product .addthis_button_google_plusone {
+  height:17px;
+  padding-top:3px;
+}
+
+/* Content */
+.node-type-product .field-field-product-price {
+  margin-top:10px;
+  text-align:right;
+  font-weight:bold;
+  font-size:1.75em;
+  color:#38332C;
+}
+
+/* Actions */
+#product-actions {
+  margin-top:20px;
+  font-family: 'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+  font-size:1.25em;
+  color:#333;
+}
+.node-type-product .enquire-link {
+  display:inline-block;
+  background-color:#dcdb81;
+  border:1px solid #ccc;
+  padding:5px;
+  margin:0;
+  margin-right:20px;
+}
+
+/* Product images */
+#product-big-image img.imagecache-product,
+.product-thumbnail img.imagecache-product_page_thumbnail{
+  border:3px solid #38332C;
+}
+#product-big-image {
+  text-align:center;
+}
+  #product-big-image-wrapper {
+    display:inline-block;
+    margin:0 auto;
+  }
+#product-thumbnails {
+  margin-top:10px;
+  text-align:center;
+}
+  #product-thumbnails-outer-wrapper {
+    float:left;
+    position:relative;
+    left:50%;
+  }
+  #product-thumbnails-inner-wrapper {
+    float:left;
+    position:relative;
+    left:-50%;
+  }
+  #product-thumbnails .product-thumbnail {
+    float:left;
+    margin-right:8px;
+    padding:0px;
+  }
+  #product-thumbnails .product-thumbnail.last {
+    margin-right:0px;
+  }
+  
+/* Colorbox on product pages */
+/* Too many people trying to be z-index 9999 */
+#colorbox {
+  z-index:10001;
+}
+
+/* Enquiry Webform Node */
+#enquiry-left {
+  float:left;
+  width:215px;
+  margin-right:15px;
+}
+#enquiry-right {
+  float:left;
+  width:350px;
+  overflow:hidden;
+} 
+  #enquiry-right .form-item {
+    margin-top:0;
+  }
+  #enquiry-right #edit-submitted-email-address {
+    width:340px;
+  }
+  #enquiry-right #edit-submitted-your-name {
+    width:340px;
+  }
+  #enquiry-right #edit-submitted-query {
+    width:340px;
+    height:80px;
+  }

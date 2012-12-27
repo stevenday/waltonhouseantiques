@@ -1,0 +1,122 @@
+<?php
+//$Id
+
+/**
+ * @file: views_saved_searches_alerts.install
+ * Install schema and settings for the views_saved_searches_alerts module
+ */
+ 
+/**
+ * Implementation of hook_install()
+ */
+function views_saved_searches_alerts_install() {
+  // install the schema
+  $results = drupal_install_schema('views_saved_searches_alerts');
+  
+  //create default message variables
+  
+  //Header (before results)
+  $message_default_header = "The following new results were found for your saved search: @search_name";
+  $message_existing_header = variable_get('views_saved_searches_alerts_alert_header', FALSE);
+  //don't overwrite a custom header
+  if(!$message_existing_header) {
+    variable_set('views_saved_searches_alerts_alert_header', $message_default_header);
+  }
+  
+  // Footer (after results)
+  $message_default_footer = "You can manage your alerts at !profile_link";
+  $message_existing_footer = variable_get('views_saved_searches_alerts_alert_footer', FALSE);
+  //don't overwrite a custom footer
+  if(!$message_existing_footer) {
+    variable_set('views_saved_searches_alerts_alert_footer', $message_default_footer);
+  }
+  
+  //Message subject
+  $message_default_subject = "@search_name: New results";
+  $message_existing_subject = variable_get('views_saved_searches_alerts_alert_subject', FALSE);
+  //don't overwrite a custom subject
+  if(!$message_existing_subject) {
+    variable_set('views_saved_searches_alerts_alert_subject', $message_default_subject);
+  }
+}
+
+/**
+ * Implementation of hook_uninstall()
+ */
+function views_saved_searches_alerts_uninstall() {
+  // uninstall the schema
+  $results = drupal_uninstall_schema('views_saved_searches_alerts');
+}
+
+/**
+ * Implementation of hook_schema().
+ * Define the schema we use to store our lists of what's been
+ * sent to who and when.
+ */
+function views_saved_searches_alerts_schema() {
+  $schema = array();
+  $schema['views_saved_searches_alerts_alerted'] = array(
+    'description' => 'Store information about the nodes that a user has been alerted about from saved searches.',
+		'fields' => array(
+			'aid' => array(
+				'description' => 'The primary identifier for the alert',
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'uid' => array(
+				'description' => 'The uid of the user that was alerted.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'sid' => array(
+				'description' => 'The search sid that the user received this alert from.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'nid' => array(
+				'description' => 'The nid of the node that the user was alerted about.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'timestamp' => array(
+				'description' => 'The time the alert was sent.',
+				'type' => 'int',
+				'not_null' => TRUE,
+      ),
+      'changed' => array(
+				'description' => 'The changed timestamp of the node at the time of alerting.',
+				'type' => 'int',
+				'not_null' => FALSE,
+      ),
+    ),
+    'indexes' => array(),
+		'unique keys' => array(),
+		'primary key' => array('aid'),   
+  );
+  $schema['views_saved_searches_alerts_alerts'] = array(
+    'description' => 'Store which saved searches to alert which users for.',
+		'fields' => array(
+      'uid' => array(
+				'description' => 'The uid of the user to be alerted.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'sid' => array(
+				'description' => 'The search sid to alert this user for.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+    ),
+    'indexes' => array(),
+		'unique keys' => array(),
+		'primary key' => array('uid','sid'),
+  );
+  return $schema;
+}
+

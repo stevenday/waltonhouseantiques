@@ -1,0 +1,219 @@
+<?php
+/**
+ * Module to contain general things like custom blocks and small form_alters for the WHA antiques site.
+ */
+ 
+/**
+ * hook_form_alter() implementation
+ */
+function mere_general_form_alter(&$form, &$form_state, $form_id) {
+  switch($form_id) {
+    case 'user_register':
+      if(arg(0) != 'user') {
+        // @NOTE: In order to be able to change this, we needed to increase our module
+        // weight in the system table to make it run after email_registration
+        // otherwise that gets in there 'last' and overwrites any changes we make here.
+        $form['mail']['#title'] = t("Enter your email address");
+        $form['submit']['#value'] = t('Sign up'); 
+      }
+      break;
+    case 'views_exposed_form':
+      $forms = array('views-exposed-form-products-page-1');
+      if(in_array($form['#id'], $forms)) {
+        // We have to validate before Views, else Views won't look at the input again
+        $form['#validate'] = array_merge(array('mere_general_products_search_form_validate'), $form['#validate']);
+      }
+      // Copy taxonomy term ids to filters on the browse view
+      if($form['#id'] == 'views-exposed-form-products-page-2') {
+        // get the view argument if defined
+        $term_arg = $form_state['view']->args[0];
+        if (isset($term_arg)) {
+          $term = taxonomy_get_term($term_arg);
+        }
+        // change our input as required
+        if (isset($term) && $term !== FALSE) {
+          switch($term->vid) {
+            case 1:
+              $field_name = "category";
+              break;
+            case 2:
+              $field_name = "period";
+              break;
+            case 3:
+              $field_name = "materials";
+              break;
+          }
+          $form_state['input'][$field_name] = $term->tid;
+          // Override Better Exposed Filters and turn the checkboxes into
+          // links to the view with different arguments
+          $form[$field_name]['#theme'] = 'select_as_links';
+        }
+      }
+      break;
+	case 'product_node_form':
+	case 'page_node_form':
+	case 'news_node_form':
+		// Remove everything but "primary-links" from the list of menu options
+		if (isset($form['menu']['parent']['#options'])) {
+			$options = array();
+
+			$original = $form['menu']['parent']['#options'];
+			foreach ($original as $id => $display) {
+			  if ((strpos($id, "navigation") !== 0) && (strpos($id, "secondary-links") !==0 ) && (strpos($id, "secondary-links") !== 0) && (strpos($id, "devel") !== 0)  && (strpos($id, "staff") !== 0))
+				$options[$id] = $display;
+			}
+
+			$form['menu']['parent']['#options'] = $options;
+		}
+		break;
+	
+  }
+  //krumo($form_id);
+}
+
+/**
+ * hook_block() implementation
+ */
+function mere_general_block($op = 'list', $delta = 0, $edit = array()) {
+  switch($op) {
+    case 'list':
+      $blocks = array();
+      
+      $blocks["furniture_search"] = array(
+        'info' => t('Furniture Search Feature Block'), 
+      );
+      return $blocks;
+      break;
+    case 'view':
+      switch($delta) {
+        case 'furniture_search':
+          $block = array(
+            'subject' => t(''), 
+            'content' => mere_general_furniture_search_block(),
+          );
+        break;
+      }
+      return $block;
+      break;
+  }
+}
+
+/**
+ * Function to produce the furniture search block
+ */
+function mere_general_furniture_search_block() {
+  global $user;
+  $html = ""; 
+  $html .= '<div id="furniture-search-block-top">';
+  $html .= '<img src="/sites/default/themes/walton/images/furniture-search-block-top.png" alt="Find exactly what you\'re looking for with our antique furniture search tool" />';
+  $html .= '<ul><li>Save your furniture searches</li><li>Receive email alerts when new furniture matches your criteria</li></ul>';
+  $html .= '</div>';
+  $html .= '<div id="furniture-search-block-bottom">';
+  $html .= '<form action="' . url('products') . '" method="GET">';
+  if(isset($_GET['q'])) {
+	$html .= '<input name="q" type="hidden" value="products" />';
+  }
+  $html .= '<input type="text" name="keys" />';
+  $html .= '<input class="submit" type="submit" value="Search"/>';
+  $html .= '</div>';
+  
+  return $html;
+}
+
+/**
+ * Function to alter submitted product search views so that they work how we want
+ */
+function mere_general_products_search_form_validate($form, &$form_state) {
+  if(isset($form_state['values']['category'])) {
+    // We need to remove any parent tids from this array
+    // if there are children tids present too, otherwise
+    // we get unwanted results
+    foreach($form_state['values']['category'] as $parent_tid) {
+      $children = array_keys(taxonomy_get_children($parent_tid, 1));
+      foreach($form_state['values']['category'] as $potential_child_tid) {
+        if(in_array($potential_child_tid, $children)) {
+          // There is a child tid in the selection, so we can remove the
+          // parent
+          unset($form_state['values']['category'][$parent_tid]);
+          break;
+        }
+      }
+    }   
+    // We have to set both $form_state['input'][..] and 
+    // the form value through form_set_value()
+    $form_state['input']['category'] = $form_state['values']['category'];
+    form_set_value(array('#parents' => array('category')), $form_state['values']['category'], $form_state);
+  }
+}
+
+// /**
+// * Implementation of hook_taxonomy_menu_path.
+// * Define custom option for taxonomy_menu that lets us redirect to a view
+// * with an argument AND a query variable
+// *
+// * @return array
+// *  function name => Display Title
+// *  a list of the path options.
+// */
+// function mere_general_taxonomy_menu_path() {
+  // $output = array('mere_general_taxonomy_view' => t('Walton House Custom'));
+
+  // return $output;
+// }
+
+// /**
+// * Implementation of hook_taxonomy_menu_options()
+// *
+// * @return array
+// *  Uses the value to set the variable taxonomy_menu_<value>_$vid
+// *  $options[value]
+// *   default - optional.  this is what will be used if the varialbe is not set.  if empty then FALSE is used
+// *   #title - required.
+// *   any other form element
+// */
+// function mere_general_taxonomy_menu_options() {
+  // $options['walton_view_base_url'] = array(
+    // '#title' => t('Base URL for the view used by Walton House custom paths'),
+    // '#description' => t('Only used when Walton House Custom path type is selected'),
+    // 'default' => 'products',
+    // '#type' => 'textfield',
+    // '#weight' => -5,
+  // );
+ 
+  // return $options;
+// }
+
+// /**
+// * Callback for hook_taxonomy_menu_path
+// */
+// function mere_general_taxonomy_view($vid, $tid) {
+  // $view_url = variable_get('taxonomy_menu_walton_view_base_url', 'products');
+  // // If tid = 0 then we are creating the vocab menu item format will be taxonomy/term/$tid+$tid+$tid....
+  // // We don't offer this...
+  // if ($tid == 0) {
+    // // Get all of the terms for the vocab
+    // // $vtids = _taxonomy_menu_get_terms($vid);
+    // // $end = implode(' ', $vtids);
+    // // $path = "taxonomy/term/$end";
+    // $path = url($view_url);
+  // }
+  // else {
+    // //$path = taxonomy_term_path(taxonomy_get_term($tid));
+    // switch($vid) {
+      // case 1:
+        // $variable = "category";
+        // break;
+      // case 2:
+        // $variable = "period";
+        // break;
+      // case 3:
+        // $variable = "material";
+        // break;
+      // default:
+        // $variable = "tid";
+        // break;
+    // }
+    // $path = url($view_url . "/" . $tid, array('query' => array($variable => $tid)));
+  // }
+  // return $path;
+// }

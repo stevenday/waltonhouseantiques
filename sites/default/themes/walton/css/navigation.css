@@ -1,0 +1,134 @@
+/**
+ * @file
+ * Navigation Styling
+ *
+ * Default menu styling (ul.menu) is defined in system-menus.css.
+ */
+
+
+/*
+ * The active item in a Drupal menu
+ */
+li a.active {
+  color: #000;
+}
+
+/*
+ * Navigation bar
+ */
+#navigation {
+  background-color:#DCDB81;
+  position:relative;
+  z-index:10000;
+}
+
+/* Superfish Menu */
+#block-superfish-1 {
+  margin:0;
+  padding:0;
+}
+
+/* main UL */
+#superfish-1 {
+  font-family: 'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+  font-size:1.2em;
+}
+  /* Basic Link styling */
+  #superfish-1 a{
+    color:#000;
+    text-decoration:none;
+    padding:0.35em 0.5em;
+  }
+  #superfish-1 li span.nolink {
+	padding:0.35em 0 0.35em 0.5em;
+	display:block;
+	position:relative;
+  }
+    #superfish-1 a:hover{
+      text-decoration:underline;
+      background-color:#fff;
+    }
+    /* Link styling for links with sub-menus */
+    #superfish-1 a.menuparent {
+      padding-right:19px;
+      background:transparent url('../images/expanded-icon-menu.png') right center no-repeat;
+    }
+    /* Link styling for sub-links with sub menus */
+    #superfish-1 li.sf-depth-2 > a.menuparent,
+    #superfish-1 li.sf-depth-3 > a.menuparent{
+      background:transparent url('../images/expandable-icon-menu.png') right center no-repeat;
+    }
+      #superfish-1 li.sf-depth-2 > a.menuparent:hover,
+      #superfish-1 li.sf-depth-3 > a.menuparent:hover {
+        background:#FFF url('../images/expandable-icon-menu.png') right center no-repeat;
+      }
+      
+  /* Sub menus */
+  #superfish-1 li.sf-depth-1 ul{
+    background-color:#DCDB81;
+    margin-top:-1em;
+    padding-top:0.5em;
+  }
+  #superfish-1 li.sf-depth-2 ul {
+    background-color:#DCDB81;
+    margin-top:0;
+    padding-top:0;
+  }
+  
+  /* Selected items - highlight the trail */
+  #superfish-1 li.sfHover a.sf-depth-1 {
+    background-color:#FFF;
+  }
+  #superfish-1 li.sfHover  li.sfHover a.sf-depth-2 {
+    background-color:#FFF;
+  }
+  
+  /* Specific top-level link items */
+  #superfish-1 li.sf-item-1,
+  #superfish-1 li.sf-item-2,
+  #superfish-1 li.sf-item-3,
+  #superfish-1 li.sf-item-4,
+  #superfish-1 li.sf-item-5{
+    /* want these aligned left */
+    float:left;
+  }
+  
+  #superfish-1 li.sf-item-6,
+  #superfish-1 li.sf-item-7,
+  #superfish-1 li.sf-item-8,
+  #superfish-1 li.sf-item-9 {
+    /* want these aligned right */
+    float:right;
+  }
+  
+  /* Make browse links closer together */
+  #superfish-1 li.sf-item-2,
+  #superfish-1 li.sf-item-3,
+  #superfish-1 li.sf-item-4 {
+	padding-right:5px;
+  }
+  
+/**
+ * Secondary Menu
+ */
+#block-menu-secondary-links {
+  margin:0;
+  float:left;
+}
+#block-menu-secondary-links h2 {
+  display:none;
+}
+#block-menu-secondary-links ul.menu {
+  padding:0;
+}
+#block-menu-secondary-links li{
+  display:block;
+  font-size:0.85em;
+  margin-bottom:15px;
+  list-style-type:none;
+  list-style-image:none;
+}
+  #block-menu-secondary-links li.last{
+    margin-bottom:0;
+  }
+  

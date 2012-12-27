@@ -1,0 +1,4 @@
+; $Id$
+name = Walton House Antiques - General
+description = Module to contain general things like custom blocks and small form_alters for the WHA antiques site.
+core = 6.x

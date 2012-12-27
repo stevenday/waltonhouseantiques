@@ -1,0 +1,30 @@
+<?php
+/* Implementation of hook_views_query_alter */
+function mere_views_exposed_sorts_views_query_alter(&$view, &$query) {
+  if ($view->name == "products") {
+    //krumo($query->orderby);
+    // Check for existence of sorting options
+    // These are added in by views-exposed-form--products--page-1.tpl.php
+    // Because if we add them in a form_alter, we can't control where in the form
+    // they appear
+    if (isset($_GET['sortby'])) {
+      // Unset existing options, except node_sticky, which always comes first
+      for($i = 1; $i <= count($query->orderby); $i++) {
+        unset($query->orderby[$i]);
+      }
+      // Set new options
+      switch($_GET['sortby']) {
+        case "date":
+          $query->orderby[1] = 'node_created DESC';
+          break;
+        case "price_lowest":
+          $query->orderby[1] = 'node_data_field_product_price_field_product_price_value ASC';
+          break;
+        case "price_highest":
+          $query->orderby[1] = 'node_data_field_product_price_field_product_price_value DESC';
+          break;
+      }
+    }
+    //krumo($query->orderby);
+  }
+}

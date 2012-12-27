@@ -1,0 +1,21 @@
+/* The arrow links on the hero block are in a weird
+ * position in IE < 7 */
+a#views_slideshow_singleframe_prev_products-block_1 {
+  left:-385px;
+}
+a#views_slideshow_singleframe_next_products-block_1 {
+  top:-86px;
+  left:385px;
+}
+
+/* Fix checkbox size on product views */
+.bef-checkboxes input,
+.view-products ul.bef-tree input  {
+  width:13px;
+  height:13px;
+}
+
+/*IE7 doesn't understand the display:inline-block on product fields */
+.view-products .views-field-field-product-images-fid .field-content {
+  display:inline;
+}

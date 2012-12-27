@@ -1,0 +1,717 @@
+<?php
+//$Id
+
+/**
+ * @file: views_saved_searches_alerts.module
+ * views_saved_searches_alerts module - provides email alerts for saved searches
+ * from the views_saved_searches module
+ *
+ * @note: This will be a whole lot more scaleable if the job_queue module
+ * is enabled, or an alternative is used in the queue() function
+ */
+
+define("PERM_RECEIVE_ALERTS", 'receive saved search alerts');
+define("PERM_ADMINISTER_SEARCH_ALERTS", 'administer saved search alerts');
+
+/**
+ * Implementation of hook_perm()
+ */
+function views_saved_searches_alerts_perm() {
+  return array(
+    PERM_RECEIVE_ALERTS,
+    PERM_ADMINISTER_SEARCH_ALERTS,
+  );
+}
+
+/**
+ * Implementation of hook_cron
+ * Once a day - at 6am ish - load up the job_queue queue with our alerts
+ * @TODO: configurable alert schedules and times - daily, 48 hour, weekly, etc
+ */
+function views_saved_searches_alerts_cron() {
+  //we run if last time cron ran was before 6am, and now it's after
+  //and if we haven't run today (or ever)
+  $cron_last = db_result(db_query('select timestamp from {watchdog} where type="cron" order by timestamp desc limit 1'));
+  $now = time();
+  $debug_mode = variable_get("views_saved_searches_alerts_debug", FALSE);
+  if($debug_mode == 1 || (intval(date("G", $cron_last)) <= 6 && intval(date("G", $now)) >= 6)) {
+    $views_saved_searches_alerts_last = variable_get("views_saved_searches_alerts_last_ran", FALSE);
+    if($debug_mode == 1 || !$views_saved_searches_alerts_last || date('ymd', $views_saved_searches_alerts_last) != date('ymd', $now)) {
+      variable_set("views_saved_searches_alerts_last_ran", $now);
+      
+      //get all users' uids from saved search tables
+      $uids = views_saved_searches_alerts_get_users();
+      
+      //queue up jobs to build the alerts for these users
+      foreach($uids as $uid) {
+        $description = "Build saved search alerts for user: " . $uid;
+        views_saved_searches_alerts_queue_add('views_saved_searches_alerts_build_alerts', $description, array($uid), '', TRUE);
+        watchdog('vss_alerts', "Queued up saved search alert build for user: %user.", array('%user' => $uid));
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_mail
+ */
+function views_saved_searches_alerts_mail($key, &$message, $params) {
+  $language = $message['language'];
+  $variables = user_mail_tokens($params['account'], $language);
+  switch($key) {
+    case 'search_alert':
+      //Update headers to html so links in
+      //the message work
+      $headers = array(
+        'MIME-Version' => '1.0',
+        'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+        'Content-Transfer-Encoding' => '8Bit',
+        'X-Mailer' => 'Drupal'
+      );
+      foreach ($headers as $key => $value) {
+        $message['headers'][$key] = $value;
+      }
+      //Load the right themed subject and message from the params
+      $message['subject'] = $params['subject'];
+      foreach($params['body'] as $line) {
+        $message['body'][] = $line;
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function views_saved_searches_alerts_theme($existing, $type, $theme, $path) {
+  $items = array();
+  //generic subject/body theme functions
+  $items['views_saved_searches_alerts_alert_subject'] = array(
+    'arguments' => array($search => NULL),
+  );
+  $items['views_saved_searches_alerts_alert_body'] = array(
+    'arguments' => array($results => NULL, $search => NULL),
+  );
+  
+  // Alert body for nodes
+  // @NOTE: theme functions for specific content types can be registered 
+  // with the name: theme_ *node_type* _alert_result and they will be picked up
+  // automatically, otherwise the generic node function will be used  
+  $items['node_alert_result'] = array(
+    'arguments' => array($node => NULL),
+  );
+  
+  // The view of the saved searches a user has from the views_saved_searches
+  // parent module, we re-theme it so that we can add our controls for alerts
+  $items['views_view_table__users_saved_searches__page_1'] = array (
+    'arguments' => array('view' => NULL, 'options' => NULL, 'rows' => NULL, 'title' => NULL),
+    'template' => 'views-view-table--users-saved-searches--page-1',
+    'preprocess functions' => array(
+      'template_preprocess',
+      'template_preprocess_views_view_table',
+      'views_saved_searches_alerts_preprocess_views_view_table',
+    ),
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_forms()
+ * Allow multiple editing forms on one views table
+ */
+function views_saved_searches_alerts_forms($form_id, $args) {
+  if(strpos($form_id, "views_saved_searches_alerts_send_alerts_form") !== FALSE) {
+    $forms[$form_id] = array(
+      'callback' => 'views_saved_searches_alerts_send_alerts_form',
+      'callback arguments' => $args,
+    );
+    return $forms;
+  }
+}
+
+/**
+ * Implementation of hook_menu() 
+ * add admin settings page and ajax callback for alert saving
+ */
+function views_saved_searches_alerts_menu() {  
+  $items = array();
+  
+  //Admin settings
+  $items['admin/settings/views-saved-searches/alerts'] = array(
+    'title' => t("Views saved searches alerts"),
+    'description' => t("Administer alerts emails"),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_saved_searches_alerts_admin'),
+    'access callback' => 'user_access',
+    'access arguments' =>  array(PERM_ADMINISTER_SEARCH_ALERTS),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  //Ajax callbacks
+  $items['views-saved-searches/alerts/add/%/%'] = array(
+    'title' => t('Toggle saved search alert'),
+    'page callback' => 'views_saved_searches_alerts_toggle_send_alerts_ajax',
+    'page arguments' => array(2,3,4),
+    'access callback' => 'views_saved_searches_alerts_ajax_access',
+    'access arguments' =>  array(3),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['views-saved-searches/alerts/remove/%/%'] = array(
+    'title' => t('Toggle saved search alert'),
+    'page callback' => 'views_saved_searches_alerts_toggle_send_alerts_ajax',
+    'page arguments' => array(2,3,4),
+    'access callback' => 'views_saved_searches_alerts_ajax_access',
+    'access arguments' =>  array(3),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  return $items;
+}
+
+/**
+ * Implementation of hook_form_alter()
+ */
+function views_saved_searches_alerts_form_alter(&$form, &$form_state, $form_id) {
+   switch($form_id) {
+    case 'views_saved_searches_save_search_form': {
+      // Add a 'enable alerts' checkbox to the save search form.      
+      $form['enable_alerts'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Send me email alerts for this search.'),
+        '#weight' => 1.
+      );
+      $form['#submit'][] = 'views_saved_searches_alerts_save_search_form_submit';
+      break;
+    }
+  }
+}
+
+/**
+ * Submit callback function for adding alerts to new saved searches
+ */
+function views_saved_searches_alerts_save_search_form_submit($form, &$form_state) {
+  if(isset($form_state['values']['sid'])) {
+    if($form_state['values']['enable_alerts'] == 1) {
+      _views_saved_searches_alerts_toggle_send_alerts($form_state['values']['uid'], $form_state['values']['sid'], 1);
+      // We also need to save the current results, otherwise alerts will
+      //be sent out for things they have potentially seen already
+      $search = array(
+        "sid" => $form_state['values']['sid'],
+        "uid" => $form_state['values']['uid'],
+        "view_name" => $form_state['values']['view_name'],
+        "search_query" => $form_state['values']['search_query']
+      );
+      $results = views_saved_searches_alerts_get_new_search_results($search);
+      if(count($results) > 0) {
+        foreach($results as $result) {
+          $data = array(
+            'uid' => $search['uid'],
+            'sid' => $search['sid'],
+            'nid' => $result->nid,
+            'timestamp' => time(),
+          );
+          drupal_write_record('views_saved_searches_alerts_alerted', $data);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Access callback for alert adding
+ */
+function views_saved_searches_alerts_ajax_access($uid) {
+  global $user;
+  //site admins can do anything
+  if($uid == 1) {
+    return TRUE;
+  }
+  //the user can add/remove if they can save searches
+  if($user->uid == $uid) {
+    if(user_access(PERM_RECEIVE_ALERTS)) {
+      return TRUE;
+    }
+  }
+  //no-one else can
+  return FALSE;
+}
+
+/**
+ * Menu callback for admin settings page
+ */
+function views_saved_searches_alerts_admin() {
+  $form = array();
+  
+  $form['views_saved_searches_alerts_alert_subject'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Alert subject line'),
+    '#default_value' => variable_get('views_saved_searches_alerts_alert_subject', ''),
+    '#description' => t('The subject line of the alert email.  You can use the following variables to customise the text: @search_name - the name the user gave the saved search that generated this alert.'),
+    '#required' => TRUE,
+  );
+  
+  $form['views_saved_searches_alerts_alert_header'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Alert header'),
+    '#default_value' => variable_get('views_saved_searches_alerts_alert_header', ''),
+    '#description' => t('Text to display before the results of an alert in alert emails. You can use the following variables to customise the text: @search_name - the name the user gave the saved search that generated this alert; !homepage_link - a link with the text "homepage" that will link the user to the homepage; !profile_link - a link to the user\'s profile page with the text "your profile".'),
+    '#required' => TRUE,
+  );
+  
+   $form['views_saved_searches_alerts_alert_footer'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Alert footer'),
+    '#default_value' => variable_get('views_saved_searches_alerts_alert_footer', ''),
+    '#description' => t('Text to display after the results of an alert in alert emails. You can use the following variables to customise the text: @search_name - the name the user gave the saved search that generated this alert; !homepage_link - a link with the text "homepage" that will link the user to the homepage; !profile_link - a link to the user\'s profile page with the text "your profile".'),
+    '#required' => TRUE,
+  );
+  
+  $form['views_saved_searches_alerts_debug'] = array(
+	'#type' => 'checkbox',
+	'#title' => t('Debug mode'),
+	'#default_value' => variable_get('views_saved_searches_alerts_debug', 0),
+	'#description' => t("Check this box to turn on debug mode, where emails are built and sent every time cron runs. For developer testing only!"),
+  );
+  
+  return system_settings_form($form);
+}
+
+/**
+ * Menu callback for AJAX toggling of saved searches
+ */
+function views_saved_searches_alerts_toggle_send_alerts_ajax($action, $uid, $sid) {
+  //call the db function
+  $send_alerts = ($action == "add") ? 1 : 0;
+  _views_saved_searches_alerts_toggle_send_alerts($uid, $sid, $send_alerts);
+}
+
+/**
+ * Wrapper function for queueing up jobs to be executed.
+ *
+ * This allows us to scale a lot more as all the alerts
+ * don't have to be sent in a single cron run.
+ *
+ * There are several alternative queueing mechanisms afoot including:
+ *
+ * job_queue (which we're currently trying to use) 
+ * @see http://drupal.org/project/job_queue
+ *
+ * drupal_queue (a backport of the new D7 core queueing)
+ * @see http://drupal.org/project/drupal_queue
+ *
+ * or even job scheduler (marked for D8)
+ * @see http://drupal.org/node/410656
+ *
+ * So you could implement something else here if/when
+ * desired.
+ * 
+ * Currently the function signature follows that of job_queue_queue_add:
+ * @param $function
+ *   The function name to call.
+ * @param $description
+ *   A human-readable description of the queued job.
+ * @param $arguments
+ *   Optional array of arguments to pass to the function.
+ * @param $file
+ *   Optional file path which needs to be included for $fucntion.
+ * @param $no_duplicate
+ *   If TRUE, do not add the job to the queue if one with the same function and
+ *   arguments already exists.
+ */
+function views_saved_searches_alerts_queue_add($function, $description, $arguments = array(), $file = '', $no_duplicate = FALSE) {
+  if(module_exists('job_queue')) {
+    job_queue_add($function, $description, $arguments, $file, $no_duplicate);
+  }
+  else{
+    //Note we ignore the fancy job_queue settings and just call the function with the arguments
+    if (function_exists($function)) {
+      call_user_func_array($function, $arguments);
+    }
+  }
+}
+
+/**
+ * Function to build alerts for a user and queue up the jobs for sending them.
+ * This function itself is put into a queue.
+ * @param $uid
+ *   A user account uid to build the alerts for.
+ */
+function views_saved_searches_alerts_build_alerts($uid) {
+  //get the saved searches for this user.
+  $searches = views_saved_searches_alerts_get_searches($uid);
+  //get the results of each saved search since we last ran.
+  //we have to do this as the user who saved the search because we're called from cron, so we're currently the anonymous user.
+  $account = user_load(array("uid" => $uid));
+  if($account) {
+    //Load the global $user object that contains the account of the currently logged in user.
+    global $user;
+    //Preserve this account in the $temp_user variable so that we can switch back to it after impersonating the loaded user.
+    $temp_user = $user;
+    //We must set this to FALSE in case the operation on the following lines fails.
+    session_save_session(FALSE);
+    //Switch the currently logged in user to the loaded user.
+    $user = $account;
+    foreach($searches as $search) {
+      $results = views_saved_searches_alerts_get_new_search_results($search);
+      if(count($results) > 0) {
+        // There are some new results, so queue them up
+        // To keep emails down to a reasonable size, we have to split lots of results up into
+        // multiple emails
+        $results_chunks = array_chunk($results, 50, TRUE);
+        foreach($results_chunks as $chunk) {
+          $account = user_load($uid);
+          $params = array();
+          $params['subject'] = theme('views_saved_searches_alerts_alert_subject', $search);
+          $params['body'] = theme('views_saved_searches_alerts_alert_body', $chunk, $search);
+          views_saved_searches_alerts_queue_add('drupal_mail', 'Send search alert to user: ' . $uid, array('views_saved_searches_alerts', 'search_alert', $account->mail, user_preferred_language($account), $params));
+          watchdog('vss_alerts', "Queued up alert for user: %user, for search: %search_name.", array('%user' => $account->name, '%search_name' => $search['search_name']));
+          //record what we've alerted about
+          foreach($chunk as $result) {
+            $data = array(
+              'uid' => $uid,
+              'sid' => $search['sid'],
+              'nid' => $result->nid,
+              'timestamp' => time(),
+            );
+            drupal_write_record('views_saved_searches_alerts_alerted', $data);
+          }
+        }
+      }
+    }
+    //Switch back to the account we saved in the $temp_user variable.
+    $user = $temp_user;
+    //Restore session saving.
+    session_save_session(TRUE);
+  }
+}
+
+/**
+ * Theme function for email alert subjects
+ */
+function theme_views_saved_searches_alerts_alert_subject($search) {
+  $variables = _views_saved_searches_alerts_mail_variables($search);
+  $subject = t(variable_get('views_saved_searches_alerts_alert_subject', ""), $variables);
+  return $subject;
+}
+
+/**
+ * Theme function for email alert bodies
+ */
+function theme_views_saved_searches_alerts_alert_body($results, $search) {
+ $variables = _views_saved_searches_alerts_mail_variables($search);
+ $body = array();
+ 
+ //email header
+ $body[] = t(variable_get('views_saved_searches_alerts_alert_header', ""), $variables);
+ $body[] = "<br/>";
+ $body[] = "<br/>";
+ 
+ //the results
+ foreach($results as $result) {
+  $node = node_load($result->nid);
+  // see if there is a theme function specific to this node type
+  // otherwise call the generic one
+  if(function_exists($node->type . '_alert_result')) {
+    $body[] = theme($node->type . '_alert_result', $node, $result);  
+  }
+  else {
+    $body[] = theme('node_alert_result', $node, $result);  
+  }
+ }
+ //email footer
+ $body[] = t(variable_get('views_saved_searches_alerts_alert_footer', ""), $variables);
+ 
+ return $body;
+}
+
+/**
+ * Theme function for node alerts
+ * @TODO: Is this better as a template?
+ */
+function theme_node_alert_result($node, $result) {
+  $output = "";
+  $output .= "<strong>" . l(t($node->title), "node/" . $node->nid, array("absolute" => true)) . "</strong>";
+  $output .= "<br/>";
+  $output .= $node->teaser;
+  $output .= "<br/>";
+  $output .= "<br/>";
+  return $output;
+}
+
+/**
+ * Preprocess function to preprocess saved searches views
+ * and add in our form to toggle the saving
+ */
+function views_saved_searches_alerts_preprocess_views_view_table(&$vars) {
+  $view = $vars['view'];
+  if($view->name == "users_saved_searches" && count($vars['rows']) > 0) {
+    //add ajax javascript
+    drupal_add_js(drupal_get_path('module', 'views_saved_searches_alerts') . "/views_saved_searches_alerts.js");
+    
+    //create the form for each row
+    foreach($vars['rows'] as $count => &$row) {
+      // @TODO: Check field names here to make sure they match those in the actual saved searches view
+      $form = drupal_get_form('views_saved_searches_alerts_send_alerts_form_' . $count, $vars['result'][$count]->views_saved_searches_uid, $vars['result'][$count]->sid);
+      $row['alert_form'] = $form;
+    }
+  }  
+}
+
+/**
+ * Form callback for send alerts toggling form
+ * @param $uid
+ *   The user that saved this search.
+ * @param $sid
+ *   The search they saved.
+ */
+function views_saved_searches_alerts_send_alerts_form($form_state, $uid, $sid) {
+  $form = array();
+  //Hidden fields
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $uid,
+  );
+  $form['sid'] = array(
+    '#type' => 'hidden',
+    '#value' => $sid,
+  );
+  //checkbox
+  $form['send_alerts'] = array(
+    '#type' => 'checkbox',
+    '#title' => t(''),
+    '#return_value' => 1,
+    '#default_value' => _views_saved_searches_alerts_is_alert($uid, $sid),
+  );
+  //submit
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+  //submit function
+  $form['#submit'] = array(
+    'views_saved_searches_alerts_send_alerts_submit',
+  );
+  return $form;
+}
+
+/**
+ * Submit function for send alerts toggling
+ */
+function views_saved_searches_alerts_send_alerts_submit($form_id, $form_values){
+  _views_saved_searches_alerts_toggle_send_alerts($form_values['values']['uid'], $form_values['values']['sid'], $form_values['values']['send_alerts']);
+}
+
+function _views_saved_searches_alerts_toggle_send_alerts($uid, $sid, $send_alerts){
+  //take the value submitted and either insert or delete into the db
+  $currently_sent = _views_saved_searches_alerts_is_alert($uid, $sid);
+  if($send_alerts == 0 && $currently_sent == 1) {
+    //they say don't send alerts, but currently we do
+    db_query("DELETE FROM {views_saved_searches_alerts_alerts} WHERE uid = %d AND sid = %d", $uid, $sid);
+  }
+  elseif($send_alerts == 1 && $currently_sent == 0){
+    //they say send alerts and currently we don't
+    $data = array("uid" => $uid, "sid" => $sid);
+    drupal_write_record("views_saved_searches_alerts_alerts", $data);
+  }
+}
+
+/**
+ * Function to get all the users that should be alerted
+ * @return $accounts
+ *  An array of user uid's, because this value gets serialised and
+ *  passed to a function at some time in the future, it's better to
+ *  defer the processing until then and save time now, rather than
+ *  load every user object in one go.
+ */
+function views_saved_searches_alerts_get_users() {
+  $accounts = array();
+  $result = db_query("SELECT DISTINCT uid from {views_saved_searches_alerts_alerts};");
+  while($row = db_fetch_array($result)) {
+    $accounts[] = $row['uid'];
+  }  
+  return $accounts;
+}
+
+/**
+ * Function to get all the saved searches a user wants to be alerted about.
+ * @param $uid
+ *   The user uid to get the saved searches for.
+ * @return $searches
+ *  An array of search details from the saved searches table.
+ */
+function views_saved_searches_alerts_get_searches($uid) {
+  $searches = array();
+  $query = "SELECT * from {views_saved_searches} vss LEFT JOIN {views_saved_searches_alerts_alerts} vssa ON vss.sid = vssa.sid WHERE vssa.uid = %d";
+  $result = db_query($query, $uid);
+  while($row = db_fetch_array($result)) {
+    $searches[] = $row;
+  }
+  return $searches;
+}
+
+/**
+ * Function to get the 'new' results for a particular
+ * saved search.
+ */
+function views_saved_searches_alerts_get_new_search_results($search) {
+  // get the list of nids we've saved from last time
+  $old_results = views_saved_searches_alerts_get_old_search_results($search);
+  
+  // Get the current results
+  // On some rare occassions this will throw up an error
+  // if the exposed input somehow breaks the view, so we surpress
+  // errors with @. Otherwise when this is run in cron we get an endless loop
+  // of the script trying to process a saved search with some duff input
+  // and not letting any other searches run.
+  $current_results = @views_saved_searches_alerts_run_search($search);
+  
+  //if there are none, give up
+  if(count($current_results) == 0) {
+    return array();
+  }
+  
+  //if not, compare the results
+  //@TODO we should use array_udiff so that we can do special comparisons
+  //but I couldn't get it to work - kept returning me objects not nids
+  //even with the exact same code as below.
+  //$different_results = array_udiff($current_results, $old_results, 'views_saved_searches_alerts_compare_results');
+  
+  $current_nids = array();
+  foreach($current_results as $result) {
+    $current_nids[] = $result->nid;
+  }  
+  $different_results = array_diff($current_nids, $old_results);  
+  if(count($different_results) == 0) {
+    //no difference, give up
+    return array();
+  }
+  
+  //some difference - pull out any new ones
+  $new_results = array();  
+  foreach($current_results as $result) {
+    if(in_array($result->nid, $different_results)) {
+      $new_results[] = $result;
+    }
+  }
+  
+  //send them back
+  return $new_results;
+}
+
+/**
+ * Function to get the 'old' results for a particular
+ * saved search.
+ * @param $search
+ *   An array of parameters that matches the columns in the saved searches table
+ * @return $old_results
+ *   An array of nids from the views_saved_searches_alerts table. This could return
+ *   whole node objects but it would be slower and we don't need to 
+ *   right now.
+ */
+function views_saved_searches_alerts_get_old_search_results($search) {
+  $result = db_query("SELECT nid FROM {views_saved_searches_alerts_alerted} WHERE uid = %d AND sid = %d", $search['uid'], $search['sid']);
+  $old_results = array();
+  while($row = db_fetch_array($result)) {
+    $old_results[] = $row['nid'];
+  }
+  return $old_results;
+}
+
+/**
+ * Function to run a search (a view) and return the result
+ */
+function views_saved_searches_alerts_run_search($search) { 
+  //watchdog("vss", "running view: " . $search['view_name'] . " for saved search with query string: " . $search['search_query']);
+  //Load the view
+  $view = views_get_view($search['view_name']);
+  
+  // Set current view and current display
+  // TODO: We need to save the display name with the view! If this changes
+  // the whole thing dies!
+  views_set_current_view($view);
+  $display_id = 'page_1';
+  $view->set_display($display_id);
+  
+  // Init the view
+  $view->is_cacheable = FALSE;
+  // set the view to show all results
+  $view->display_handler->set_option('items_per_page', 0); 
+
+  //put our params in
+  $our_filters = _views_saved_searches_alerts_build_view_filters($view, $search['search_query']);
+  $view->set_exposed_input($our_filters);  
+  
+  //watchdog("vss", "Before execution, View's loaded filters are : " . print_r($view->get_exposed_input(), 1));
+  //watchdog("vss", "Before execution, View's data is : " . print_r($view->exposed_data, 1));
+  
+  //run the view
+  $view->pre_execute();
+  
+  //watchdog("vss", "After pre-execution, View's loaded filters are : " . print_r($view->get_exposed_input(), 1));
+  //watchdog("vss", "After pre-execution, View's data is : " . print_r($view->exposed_data, 1));
+  
+  $view->build();
+  
+  //watchdog("vss", "After build, View's loaded filters are : " . print_r($view->get_exposed_input(), 1));
+  //watchdog("vss", "After build, View's data is : " . print_r($view->exposed_data, 1));
+  
+  $view->execute();
+  
+  //get the result
+  $result = $view->result;
+  //watchdog("vss", "results for saved search with query string: " . $search['search_query'] . " are: " . print_r($result, 1));
+  
+  //save memory and kill views' 'memory' of our input
+  $view->destroy();
+  unset($_SESSION['views'][$search['view_name']]['default']);
+  
+  return $result;
+}
+
+/**
+ * Helper function to take a query url and return an array of 
+ * parameters and values in the format expected by a view's filters
+ * array.
+ */
+function _views_saved_searches_alerts_build_view_filters(&$view, $query_string) {
+  //watchdog("vss", "building filters for saved search with query string: " . $query_string);
+  // Use the same mechanism php uses to parse a query string into $_GET
+  $query = array();
+  parse_str($query_string, $query);
+  // Remove things that are definately not our input
+  // @see: http://views.doc.logrus.com/ view::get_exposed_input()
+  foreach(array("page", "q") as $key) {
+    if(isset($query[$key])) {
+      unset($query[$key]);
+    }
+  }
+  //add (or overwrite) the 'posted' parameter, to ensure we only
+  //look for nodes that are 48 hours old max (we can only do it to the nearest day)
+  $query['posted']['value'] = date("Y-m-d", time() - 172800);  
+  //watchdog("vss", "filters for saved search with query string: " . $query_string . " are: " . print_r($query, 1));
+  return $query;
+}
+
+/**
+ * Helper function to get all the mail variables we need for alert emails
+ */
+function _views_saved_searches_alerts_mail_variables($search){
+  return array(
+    '@search_name' => t($search['search_name']),
+    '!homepage_link' => l(t("homepage"), '<front>', array('absolute' => TRUE)),
+    '!profile_link' => l(t("your profile"), "user/" . $search['uid'], array('absolute' => TRUE)),
+  );
+}
+
+/**
+ * Helper function to get whether a user is currently being alerted
+ * for a given search
+ */
+function _views_saved_searches_alerts_is_alert($uid, $sid) {
+   $is_alert = 0;
+  if(db_result(db_query("SELECT sid from {views_saved_searches_alerts_alerts} WHERE uid = %d AND sid = %d", $uid, $sid))) {
+    $is_alert = 1;
+  }
+  
+  return $is_alert;
+}

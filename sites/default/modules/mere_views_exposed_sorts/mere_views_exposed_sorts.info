@@ -1,0 +1,6 @@
+; $Id$
+name = Views Exposed Sorts
+description = Uses Views' query_alter, and Drupal form_alter hooks to provide controls for users to change the sorting criteria of views in other formats than table displays.
+package = Views
+core = 6.x
+

@@ -1,0 +1,163 @@
+/**
+ * @file
+ * CSS targeted specifically for Internet Explorer 5 and 6 for Windows.
+ *
+ * Any CSS in this file will override the rules specified in the ie.css file.
+ */
+
+
+/*
+ * Layout CSS
+ */
+
+body {
+  text-align: center; /* 1st part of IE5/IE6quirks centering hack */
+}
+
+#page {
+  text-align: left; /* LTR */ /* 2nd part of IE5/IE6quirks centering hack */
+}
+
+#main-wrapper {
+  zoom: 1; /* Otherwise with a liquid layout, sidebars disappear when resizing the windows in IE6 */
+}
+
+#content,
+#navigation,
+.region-sidebar-first,
+.region-sidebar-second /* Floating divs */ {
+  display: inline; /* display inline or double your floated margin! [1] */
+  overflow: hidden; /* in ie6, overflow auto is broken [2] and so is overflow visible [3] */
+  overflow-y: visible;
+}
+
+/*
+ * Tabs - IE 5 and 6 don't support PNGs with alpha transparency.
+ */
+
+ul.primary li a,
+ul.primary li a .tab,
+ul.secondary li a,
+ul.secondary li a .tab {
+  display: inline-block; /* Otherwise the blocks mistakenly get 100% width in IE6 */
+}
+
+ul.primary li a {
+  background: url(../images/tab-left-ie6.png) no-repeat left -38px;
+}
+
+ul.primary li a .tab {
+  background: url(../images/tab-right-ie6.png) no-repeat right -38px;
+}
+
+ul.primary li a:hover,
+ul.primary li a:focus {
+  background: url(../images/tab-left-ie6.png) no-repeat left -76px;
+}
+
+ul.primary li a:hover .tab,
+ul.primary li a:focus .tab {
+  background: url(../images/tab-right-ie6.png) no-repeat right -76px;
+}
+
+ul.primary li.active a,
+ul.primary li.active a:hover,
+ul.primary li.active a:focus {
+  background: url(../images/tab-left-ie6.png) no-repeat left 0;
+}
+
+ul.primary li.active a .tab,
+ul.primary li.active a:hover .tab,
+ul.primary li.active a:focus .tab {
+  background: url(../images/tab-right-ie6.png) no-repeat right 0;
+}
+
+/*
+ * Messages - IE 5 and 6 don't support PNGs with alpha transparency.
+ */
+
+div.messages,
+div.status,
+div.warning,
+div.error /* Important messages (status, warning, and error) for the user */ {
+  background-image: url(../images/messages-status-ie6.png);
+}
+
+div.warning /* Medium priority messages */ {
+  background-image: url(../images/messages-warning-ie6.png);
+}
+
+div.error /* High priority messages. See also the .error declaration below. */ {
+  background-image: url(../images/messages-error-ie6.png);
+}
+
+
+/*
+ * REFERENCES
+ *
+
+1. http://www.positioniseverything.net/explorer/doubled-margin.html
+2. http://browservulsel.blogspot.com/2005/04/ie-overflow-auto-scrollbar-overlap.html
+3. http://www.howtocreate.co.uk/wrongWithIE/?chapter=overflow%3Avisible%3B
+4. http://www.ryanbrill.com/archives/multiple-classes-in-ie
+
+ *
+ */
+ 
+ /* Superfish menu links - IE6 displays them full width */
+ #superfish-1 a {
+  display:inline-block;
+ }
+ 
+/* The arrow links on the hero block are in a weird
+ * position in IE < 7 */
+a#views_slideshow_singleframe_prev_products-block_1 {
+  left:-385px;
+}
+a#views_slideshow_singleframe_next_products-block_1 {
+  top:-86px;
+  left:385px;
+}
+
+#block-views-products-block_1 .view-content {
+  overflow:hidden;
+}
+
+.node-type-product .addthis_toolbox{
+  width:145px;
+  margin-left:55px;
+} 
+
+.node-type-product .addthis_button_email {
+  margin-left:0;
+  margin-right:0;
+}
+.node-type-product .addthis_button_email span {
+  margin-left:0px;
+} 
+
+/* Fix checkbox size on product views */
+.bef-checkboxes input,
+.view-products ul.bef-tree input  {
+  width:13px;
+  height:13px;
+}
+
+/*IE6 doesn't understand the display:inline-block on product fields */
+.view-products .views-field-field-product-images-fid .field-content {
+  display:inline;
+}
+
+
+/* ___________ IE6 IFRAME FIX ________ */
+.ui-datepicker-cover {
+  display: none; /*sorry for IE5*/
+  display/**/: block; /*sorry for IE5*/
+  position: absolute; /*must have*/
+  z-index: -1; /*must have*/
+  filter: mask(); /*must have*/
+  top: -4px; /*must have*/
+  left: -4px; /*must have*/ /* LTR */
+  width: 200px; /*must have*/
+  height: 200px; /*must have*/
+}

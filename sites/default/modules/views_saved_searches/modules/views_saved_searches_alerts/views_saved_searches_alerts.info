@@ -1,0 +1,7 @@
+; $Id$
+name = Views Saved Searches Alerts
+description = Provide email alerts for saved searches
+dependencies[] = views_saved_searches
+
+package = Views
+core = 6.x

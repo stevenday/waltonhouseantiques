@@ -1,0 +1,463 @@
+/**
+ * @file
+ * Page Styling
+ *
+ * Style the markup found in page.tpl.php. Also includes some styling of
+ * miscellaneous Drupal elements that appear in the $content variable, such as
+ * ul.links, .pager, .more-link, etc.
+ */
+
+
+/*
+ * Body
+ */
+body {
+  margin: 0;
+  padding: 0;
+  background:transparent url("../images/background.png") top center repeat-y;
+}
+
+#page-wrapper {
+}
+
+#page {
+}
+
+/*
+ * The skip navigation link will be completely hidden until a user tabs to the
+ * link. See http://www.webaim.org/techniques/skipnav/
+ */
+#skip-link a,
+#skip-link a:visited {
+  position: absolute;
+  display: block;
+  left: 0;
+  top: -500px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  text-align: center;
+  background-color: #666;
+  color: #fff;
+}
+
+#skip-link a:hover,
+#skip-link a:active,
+#skip-link a:focus {
+  position: static;
+  width: 100%;
+  height: auto;
+  padding: 2px 0 3px 0;
+}
+
+/*
+ * Admin menu - make it bigger for older eyes
+ */
+body #admin-menu {
+	font-size:14px;
+}
+body.admin-menu {
+	margin-top:30px !important;
+}
+
+/*
+ * Page top - shown when an admin logged in for simple admin menu
+ */
+#page-top {
+  padding:0px 15px;
+  margin-bottom:15px;
+}
+
+/*
+ * Header
+ */
+#header {
+  background-color:#38332c;
+}
+
+#header .section {
+}
+
+/* Reset font size for homepage h1 tag */
+#logo h1 {
+    font-size:1em; 
+    font-weight:normal;
+  }
+  
+#logo /* Wrapping link for logo - text styling here so it's the same on all pages */ {
+  float: left; /* LTR */
+  padding: 0;
+  text-align:center;
+  font-size:1.875em; /* 30px / 16px base size = 1.875em*/
+  color:#FFF;
+  text-transform:uppercase;
+  margin:0;
+  letter-spacing:0.3em; /* +300 tracking in PS = 0.3 em */
+  line-height:1.3em;
+}
+  
+  a#logo {
+    text-decoration:none;
+  }
+    a#logo:hover{
+      text-decoration:none;
+    }
+  
+  #logo span.underlined-title {
+    font-size:1.8em; /* 54px / 30px base size (above) = 1.8em*/
+    display:block;
+    border-bottom:2px solid #dcdb81;
+    padding-bottom:7px;
+    margin-bottom:2px;
+  }
+
+#header-menu {
+ position:relative;
+ top:-10px;
+ text-align:right;
+ color:#999;
+ font-size:0.85em;
+}
+  #header-menu a {
+    color:#999;
+  }
+  
+#header-phone-number {
+  margin-bottom:20px;
+  text-align:right;
+  font-size:28px;
+  color:#FFF;
+}
+  #header-phone-number #phone-logo{
+    margin-right:10px;
+    margin-bottom:-5px;
+  }
+
+#header-address {
+  text-align:right;
+  color:#FFF;
+  font-family: 'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;    
+}
+
+#search-box {
+ 
+}
+  #search-box .form-item{
+    margin: 0;
+  }
+  #search-box #search {
+    height:27px;
+  }
+  #search-box #edit-search-theme-form-1-wrapper {
+    display:block;
+    margin-right:10px;
+    border: 1px solid #ccc;
+    background-color:#FFF;
+    float:left;
+  }
+  #search-box #edit-search-theme-form-1 {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    width:225px;
+    height:24px;
+  }
+  #search-box input.form-submit {
+    height:26px;
+    float:right;
+  }
+
+.region-header /* Wrapper for any blocks placed in the header region */ {
+}
+
+/*
+ * Main (container for everything else)
+ */
+#main-wrapper {
+}
+
+#main {
+}
+
+/*
+ * Content
+ */
+#content {
+}
+
+#content .section {
+}
+
+#mission /* The mission statement of the site (displayed on homepage) */ {
+}
+
+.region-content-top /* Wrapper for any blocks placed in the "content top" region */ {
+}
+
+.breadcrumb /* The path to the current page in the form of a list of links */ {
+  font-size:0.85em;
+  padding:5px 10px;
+  color:#999;
+  margin-top:-15px;
+  margin-left:-15px;
+  font-family: 'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+}
+  .breadcrumb a {
+    color:#777;
+  }
+
+/* The title of the page when not on the front page */
+h1.title {
+  font-family: 'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+  color: #38332C;
+  font-weight:normal;
+  font-size:2em;
+}
+
+h2.title, /* Block title or the title of a piece of content when it is given in a list of content */
+h3.title /* Comment title */ {
+  margin: 0;
+}
+
+tr.even /* Some tables have rows marked even or odd. */ {
+  /* background-color: #eee; */ /* Drupal core uses a #eee background */
+}
+
+tr.odd {
+  /* background-color: #eee; */ /* Drupal core uses a #eee background */
+}
+
+div.messages /* Important messages (status, warning, and error) for the user. See also the declarations in messages.css. */ {
+}
+
+div.status /* Normal priority messages */ {
+}
+
+div.warning,
+tr.warning /* Medium priority messages */ {
+  /* border: 1px solid #f0c020; */ /* Drupal core uses: 1px solid #f0c020 */
+}
+
+div.error,
+tr.error /* High priority messages. See also the .error declaration below. */ {
+}
+
+.error /* Errors that are separate from div.messages status messages. */ {
+  /* color: #e55; */ /* Drupal core uses a #e55 background */
+}
+
+.warning /* Warnings that are separate from div.messages status messages. */ {
+  /* color: #e09010; */ /* Drupal core uses a #e09010 background */
+}
+
+div.tabs /* See also the tabs.css file. */ {
+}
+
+.help /* Help text on a page */ {
+  margin: 1em 0;
+}
+
+.more-help-link /* Link to more help */ {
+  font-size: 0.85em;
+  text-align: right;
+}
+
+#content-area /* Wrapper for the actual page content */ {
+}
+
+/* Wrappers for content on the front page */
+.region-hero,
+.region-feature-block-1 {
+  border-bottom:7px solid #DCDB81;
+  padding:20px 15px;
+}
+.region-hero {
+  padding-top:0px;
+}
+.region-feature-block-2 {
+  padding:20px 15px;
+}
+
+ul.links /* List of links */ {
+  margin: 1em 0;
+  padding: 0;
+}
+
+ul.links.inline {
+  margin: 0;
+  display: inline;
+}
+
+ul.links li {
+  display: inline;
+  list-style-type: none;
+  padding: 0 0.5em;
+}
+
+.pager /* A list of page numbers when more than 1 page of content is available */ {
+  clear: both;
+  margin: 1em 0;
+  text-align: center;
+  font-size:1.15em;
+}
+
+.pager a,
+.pager strong.pager-current /* Each page number in the pager list */ {
+  padding: 0.5em;
+}
+
+.feed-icons /* The links to the RSS or Atom feeds for the current list of content */ {
+  margin: 1em 0;
+}
+
+.more-link /* Aggregator, blog, and forum more link */ {
+  text-align: right; /* LTR */
+}
+
+.region-content-bottom /* Wrapper for any blocks placed in the "content bottom" region */ {
+}
+
+/*
+ * First sidebar (on left in LTR languages, on right in RTL)
+ *
+ * Remember to NOT add padding or margin to your .region-sidebar-first
+ * (see the layout.css file.)
+ */
+.region-sidebar-first {
+}
+
+.region-sidebar-first .section {
+}
+
+/*
+ * Second sidebar (on right in LTR languages, on left in RTL)
+ *
+ * Remember to NOT add padding or margin to your .region-sidebar-second
+ * (see the layout.css file.)
+ */
+.region-sidebar-second {
+}
+
+.region-sidebar-second .section {
+}
+
+/*
+ * Footer
+ */
+#footer {
+  
+}
+
+#footer .section {
+}
+
+#footer-message /* Wrapper for the footer message from Drupal's "Site information"
+                   and for any blocks placed in the footer region */ {
+}
+
+.region-footer {
+  margin:0 auto;
+  text-align:left;
+  border-top:7px solid #DCDB81;
+  padding-top:10px;
+}
+
+/*
+ * Closure
+ */
+.region-page-closure /* Wrapper for any blocks placed in the closure region */ {
+}
+
+/*
+ * Drupal boxes
+ *
+ * Wrapper for Comment form, Comment viewing options, Menu admin, and
+ * Search results.
+ */
+.box /* Wrapper for box */ {
+}
+
+.box h2 /* Box title */ {
+}
+
+.box .content /* Box's content wrapper */ {
+}
+
+/*
+ * Markup free clearing (See: http://www.positioniseverything.net/easyclearing.html )
+ */
+.clearfix:after {
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+/**
+ * Hide elements from all users.
+ *
+ * Used for elements which should not be immediately displayed to any user. An
+ * example would be a collapsible fieldset that will be expanded with a click
+ * from a user. The effect of this class can be toggled with the jQuery show()
+ * and hide() functions.
+ */
+.element-hidden {
+  display: none;
+}
+
+/**
+ * Hide elements visually, but keep them available for screen-readers.
+ *
+ * Used for information required for screen-reader users to understand and use
+ * the site where visual display is undesirable. Information provided in this
+ * manner should be kept concise, to avoid unnecessary burden on the user. Must
+ * not be used for focusable elements (such as links and form elements) as this
+ * causes issues for keyboard only or voice recognition users. "!important" is
+ * used to prevent unintentional overrides.
+ */
+.element-invisible {
+  position: absolute !important;
+  clip: rect(1px 1px 1px 1px); /* IE6, IE7 */
+  clip: rect(1px, 1px, 1px, 1px);
+}
+
+/**
+ * Hide page elements that we don't need when displaying elements in an iframe
+ */
+body.iframe #admin-menu,
+body.iframe #header,
+body.iframe #navigation,
+body.iframe .breadcrumb,
+body.iframe .region,
+body.iframe .tabs,
+body.iframe .node .links,
+body.iframe .node .meta,
+body.iframe #content-area .links,
+body.iframe #footer,
+body.iframe #sliding-popup
+ {
+  display:none;
+}
+
+body.iframe.page-user-register .tabs {
+  display:block;
+}
+
+/**
+ * Style page elements that are left to make things look good
+ */
+ body.iframe {
+  margin:0;
+ }
+body.iframe #content,
+body.iframe #page-wrapper
+ {
+  margin:0;
+  padding:0;
+  width:580px;
+}
+body.iframe #content .section {
+  margin:0;
+  padding:0;
+}

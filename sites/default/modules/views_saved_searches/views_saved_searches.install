@@ -1,0 +1,67 @@
+<?php
+//$Id
+
+function views_saved_searches_install() {
+  // install the schema
+  $results = drupal_install_schema('views_saved_searches');
+  
+  // init variable that stores what views there are
+  // where they're located (urls)
+  // format: view_id => page display url
+  $views = array();
+  variable_set("views_saved_searches_view_names", $views);
+}
+
+function views_saved_searches_uninstall() {
+  //uninstall the schema
+  drupal_uninstall_schema('views_saved_searches');
+}
+
+function views_saved_searches_schema() {
+  $schema = array();
+  $schema['views_saved_searches'] = array(
+    'description' => 'Store views filter configurations for re-running at a later date',
+		'fields' => array(
+			'sid' => array(
+				'description' => 'The primary identifier for the search',
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'uid' => array(
+				'description' => 'The uid of the user that saved the search',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not_null' => TRUE,
+      ),
+      'view_name' => array(
+        'description' => 'The name of view that produces the search results',
+				'type' => 'varchar',
+        'length' => 255,
+				'not_null' => TRUE,
+      ),
+      'search_name' => array(
+				'description' => 'The name the user gave the search',
+				'type' => 'varchar',
+        'length' => 255,
+				'not_null' => TRUE,
+      ),
+      'search_query' => array(
+				'description' => 'The query string for the search',
+				'type' => 'text',
+        'size' => 'normal',
+				'not_null' => TRUE,
+      ),
+      'timestamp' => array(
+				'description' => 'The time the search was saved',
+				'type' => 'int',
+				'not_null' => TRUE,
+      ),
+    ),
+    'indexes' => array(),
+		'unique keys' => array(),
+		'primary key' => array('sid'),   
+  );
+  return $schema;
+}
+

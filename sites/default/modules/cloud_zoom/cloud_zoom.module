@@ -1,0 +1,96 @@
+<?php
+
+/**
+ * Implementation of hook_requirements().
+ */
+function cloud_zoom_requirements($phase) {
+  if ($phase == 'runtime') {
+    $files_present = _cloud_zoom_files_present();
+
+    return array(
+      'cloud_zoom_sourcefiles' => array(
+        'title' => t('Cloud Zoom - Sourcecode downloaded and present'),
+        'value' => $files_present ? t('Files Present') : t('Files Missing'),
+        'description' => $files_present ? NULL : t('Have the sourcecode files for Cloud Zoom been downloaded from <a href="http://www.professorcloud.com/mainsite/cloud-zoom.htm">Professor Cloud</a>'),
+        'severity' => $files_present ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+      ),
+    );
+  }
+}
+
+
+/**
+ * Internal Helper function to check if the required source code is present
+ */
+function _cloud_zoom_files_present() {
+  $path = drupal_get_path('module', 'cloud_zoom');
+  return (file_exists($path .'/cloud-zoom/cloud-zoom.1.0.2.min.js') && file_exists($path .'/cloud-zoom/cloud-zoom.css'));
+}
+
+
+/**
+ * Implementation of hook_field_formatter().
+ */
+function cloud_zoom_field_formatter_info() {
+  $formatters = array();
+
+  // Load the rules and build a "grid" of a->b settings.
+  $rules = imagecache_presets();
+  foreach ($rules as $outer_preset_id => $outer_preset_info) {
+    foreach ($rules as $inner_preset_id => $inner_preset_info) {
+      $formatters['imagefield__cloud_zoom__'. $outer_preset_info['presetname'] .'__'. $inner_preset_info['presetname']] = array(
+        'label' => t('Cloud Zoom: !outer -> !inner', array('!outer' => $outer_preset_info['presetname'], '!inner' => $inner_preset_info['presetname'])),
+        'field types' => array('filefield'),
+      );
+    }
+  }
+
+  return $formatters;
+}
+
+
+/**
+ * Implementation of hook_theme().
+ */
+function cloud_zoom_theme() {
+  // Define a base theme handler
+  $theme = array(
+    'cloud_zoom_formatter_imagefield' => array(
+      'arguments' => array('element' => NULL),
+    ),
+  );
+
+  // Load the rules and build a "grid" of a->b settings.
+  $rules = imagecache_presets();
+  foreach ($rules as $outer_preset_id => $outer_preset_info) {
+    foreach ($rules as $inner_preset_id => $inner_preset_info) {
+      $theme['cloud_zoom_formatter_imagefield__cloud_zoom__'. $outer_preset_info['presetname'] .'__'. $inner_preset_info['presetname']] = array(
+        'arguments' => array('element' => NULL),
+        'function' => 'theme_cloud_zoom_formatter_imagefield',
+      );
+    }
+  }
+
+  return $theme;
+}
+
+
+/**
+ * Theme handler for the cloud_zoom effect
+ */
+function theme_cloud_zoom_formatter_imagefield($element) {
+  if (!_cloud_zoom_files_present()) return;
+
+  // Add the cloud zoom JS and CSS
+  drupal_add_js(drupal_get_path('module', 'cloud_zoom') .'/cloud-zoom/cloud-zoom.1.0.2.min.js');
+  drupal_add_css(drupal_get_path('module', 'cloud_zoom') .'/cloud-zoom/cloud-zoom.css');
+
+  // Get the view and zoom presets from the formatter ID.
+  list($tmp, $cloud_zoom_type, $view_preset, $zoom_preset) = explode('__', $element['#formatter'], 4);
+
+  // Theme the preview image using imagecache
+  $small = theme('imagecache', $view_preset, $element['#item']['filepath']);
+
+  // Return the preview image as a link to the larger image with a cloud-zoom CSS class
+  return l($small, imagecache_create_path($zoom_preset, $element['#item']['filepath']), array('html' => TRUE, 'attributes' => array('class' => 'cloud-zoom')));
+}

@@ -1,0 +1,8 @@
+; $Id$
+name = Views Saved Searches
+description = add the capability to save views 'searches' (IE: exposed filter forms) so that the filters can be run again later
+
+dependencies[] = views
+
+package = Views
+core = 6.x

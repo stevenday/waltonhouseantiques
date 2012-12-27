@@ -1,0 +1,549 @@
+<?php
+//$Id
+
+/**
+ * @file
+ * Views_saved_searches.module, add the capability to save views 'searches'
+ * (IE: exposed filter forms) so that the filters can be run again later
+ */
+ 
+define("PERM_SAVE_SEARCHES", 'save searches');
+define("PERM_ADMINISTER_SAVED_SEARCHES", 'administer views saved searches');
+
+/** 
+ * Implementation of hook_theme()
+ */
+function views_saved_searches_theme() {
+  return array(
+    //theme the 'save this search' link
+    'save_this_search_link' => array(
+      'arguments' => array($view => NULL),
+    ),
+    //theme the 'update saved search'
+    'update_this_search_link' => array(
+      'arguments' => array($view => NULL, $sid => NULL),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_perm()
+ */
+function views_saved_searches_perm() {
+  return array(
+    PERM_SAVE_SEARCHES,
+    PERM_ADMINISTER_SAVED_SEARCHES,
+  );
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+function views_saved_searches_menu() {
+  $items = array();
+  
+  // Admin settings page
+  $items['admin/settings/views-saved-searches'] = array(
+    'title' => t("Views saved searches"),
+    'description' => t("Administer views saved searches"),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_saved_searches_admin'),
+    'access callback' => 'user_access',
+    'access arguments' =>  array(PERM_ADMINISTER_SAVED_SEARCHES),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  // Add search
+  // %3 = view name
+  // %4 = search query
+  $items['views-saved-searches/save-search/add/%/%'] = array (
+    'title' => "Save a search",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_saved_searches_save_search_form', 3, 4),
+    'access callback' => 'user_access',
+    'access arguments' =>  array(PERM_SAVE_SEARCHES),
+    'type' => MENU_CALLBACK,
+  );
+  
+  // Update search
+  // %3 = search id
+  // %5 = search query
+  $items['views-saved-searches/save-search/update/%/%'] = array (
+    'title' => "Update a saved search",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_saved_searches_update_saved_search_form', 3, 4),
+    'access callback' => 'views_saved_searches_update_saved_search_access',
+    'access arguments' =>  array(3),
+    'type' => MENU_CALLBACK,
+  );
+  
+  // Remove search
+  // %1 = search id
+  $items['views-saved-searches/save-search/delete/%'] = array (
+    'title' => "Delete a saved search",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('views_saved_searches_delete_saved_search_form',3),
+    'access callback' => 'views_saved_searches_delete_saved_search_access',
+    'access arguments' =>  array(3),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_user()
+ */
+function views_saved_searches_user($op, &$edit, &$account, $category = NULL) {
+  switch($op) {
+    case 'login':
+      if(isset($_SESSION['views_saved_searches']) && is_array($_SESSION['views_saved_searches'])) {
+        $url = url('views-saved-searches/save-search/add/' . $_SESSION['views_saved_searches']['view'] . "/" . $_SESSION['views_saved_searches']['query']);
+        $_REQUEST['destination'] = $url;
+        $_REQUEST['edit']['destination'] = $url;
+        // Clear existing messages
+        $messages = drupal_get_messages(NULL, TRUE);
+        drupal_set_message(t("Great, now you can save your search using the form below.."), "status", FALSE);
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_views_api().
+ */
+function views_saved_searches_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'views_saved_searches'),
+  );
+}
+
+/**
+ * Implementation of hook_form_alter()
+ */
+function views_saved_searches_form_alter(&$form, &$form_state, $form_id) {
+  // Check if this view is one we've enabled in the module settings
+  // we need to play with the strings from the form a little to match
+  // the format of what we've stored in the DB
+  $views_form_id = str_replace("views-exposed-form-", "", $form['#id']);
+  if($form_id == 'views_exposed_form' && in_array($views_form_id, variable_get('views_saved_searches_form_ids', array())))
+  {
+    //if this came from an existing saved search, pass on the parameter to save that search
+    if(isset($_GET['update_saved_search'])){
+      $form['new_search_submitted'] = array(
+        '#type' => 'hidden',
+        '#value' => check_plain($_GET['update_saved_search']),
+      );
+    }
+  }
+  elseif($form_id == "user_login" || $form_id == "user_register") {
+    if(isset($_SESSION['views_saved_searches'])) {
+      // Clear existing messages
+      $messages = drupal_get_messages(NULL, TRUE);
+      drupal_set_message(t("You need to login or register before you can save searches. Use the form below to do so and then we'll send you right along"), "status", FALSE);
+    }
+  }
+}
+
+/**
+ * Theme function for 'save this search' links
+ */
+function theme_save_this_search_link($view) {
+  //make a link for the save this search link
+  //we need to save the views get args, but not
+  //those to do with paging
+  $view_args = array();
+  
+  $url_parts = explode("?", request_uri());
+  //request_uri gives a leading slash which we don't want
+  $query = $url_parts[1];
+  //we don't want all the query though
+  $query_parts = explode("&", $query);
+  foreach($query_parts as $index => $variable) {
+    $variable_name = explode("=", $variable);
+    if($variable_name != "page") {
+      $view_args[] = $variable;
+    }
+  }
+  $view_query = implode("&", $view_args);
+  
+  //use the whole url to mark where to send the user back to:
+  $destination = urlencode(substr(request_uri(), 1));
+  
+  // save things in the session too, so that if the user has to go
+  // through the login/register process first, they can still save
+  // their search afterwards
+  $_SESSION['views_saved_searches'] = array(
+    "view" => $view->name,
+    "query" => $view_query,
+  );
+  
+  return "<div class='save-this-search-link'>" . l(t('Save this search'), 'views-saved-searches/save-search/add/' . $view->name . "/" . $view_query, array('query' => array('destination' => $destination), 'attributes' => array('class' => 'form-submit'))) . "</div>";
+}
+
+/**
+ * Theme function for updating saved search links
+ */
+function theme_update_this_search_link($view, $sid) {
+  //make a link for the save this search link
+  //we need to save the views get args, but not
+  //those to do with paging or the updating parameter
+  //we pass
+  $view_args = array();
+  
+  $url_parts = explode("?", request_uri());
+  //request_uri gives a leading slash which we don't want
+  $query = $url_parts[1];
+  //we don't want all the query though
+  $query_parts = explode("&", $query);
+  foreach($query_parts as $index => $variable) {
+    $variable_name = explode("=", $variable);
+    if($variable_name != "page" && $variable_name != "new_search_submitted") {
+      $view_args[] = $variable;
+    }
+  }
+  $view_query = implode("&", $view_args);
+  
+  //use the whole url to mark where to send the user back to:
+  $destination = urlencode(substr(request_uri(), 1));
+  return '<div class="save-this-search-link">' . l(t('Update saved search'), 'views-saved-searches/save-search/update/' . $sid . '/' . $view_query, array('query' => array('destination' => $destination), 'attributes' => array('class' => 'form-submit'))) . '</div>';
+}
+
+/**
+ * Menu callback to produce the form to save a search
+ */
+function views_saved_searches_save_search_form(&$form_state, $view_name, $search_query) {
+  //present the user with a form to enter a name for the search
+  $form = array();
+  
+  $form['search_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t("Search name"),
+    '#description' => t('Enter a name to save your search under.'),
+    '#required' => TRUE,
+    '#weight' => 0,
+  );
+  //save the users id
+  global $user;
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => intval($user->uid),
+  );
+  //Pass the submitted values through too
+  $form['view_name'] = array(
+    '#type' => 'hidden',
+    '#value' => $view_name,
+  );
+  $form['search_query'] = array(
+    '#type' => 'hidden',
+    '#value' => urldecode($search_query),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save search'),
+    '#weight' => 10,
+  );
+  return $form;
+  
+}
+
+/**
+ * Submit function for the save search form
+ */
+function views_saved_searches_save_search_form_submit($form, &$form_state) {
+  $object = array(
+    'uid' => $form_state['values']['uid'],
+    'view_name' => $form_state['values']['view_name'],
+    'search_name' => $form_state['values']['search_name'],
+    'search_query' => $form_state['values']['search_query'],
+    'timestamp' => time(),
+  );
+  
+  $result = drupal_write_record('views_saved_searches', $object);
+  // set the new sid so we can access this in other
+  // form submits
+  if(isset($object['sid'])) {
+    $form_state['values']['sid'] = $object['sid'];
+  }
+  $message = ($result) ? t("Your search: %search_name has been saved. Here are your saved searches..", array('%search_name' => $object['search_name'])) : t("Failed to save search: %search_name", array('%search_name' => $object['search_name']));
+  $status = ($result) ? "status" : "error";
+  drupal_set_message($message, $status);
+  unset($_SESSION['views_saved_searches']);
+  // Redirect to the saved searches page
+  global $user;
+  $_REQUEST['destination'] = url('user/' . $user->uid . "/saved-searches");
+}
+
+/**
+ * Form callback to update a saved search
+ * Show an 'are you sure' button and let them
+ * rename it.
+ */
+function views_saved_searches_update_saved_search_form(&$form_state, $sid, $search_query) {
+  $search = _views_saved_searches_load_saved_search($sid);
+  global $user;
+  
+  $form = array();
+  
+  $form['#prefix'] = '<div class="update-saved-search-confirm-message">' . t("Are you sure you want to update the search !search_name?", array('!search_name' => $search->search_name)) . '</div>';
+  
+  //save the users id
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => intval($user->uid),
+  );
+  
+  //let them change the name too
+  $form['search_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t("Search name"),
+    '#default_value' => $search->search_name,
+    '#description' => t('You can rename the search if you wish by typing a new name here.'),
+    '#required' => TRUE,
+  );
+  
+  $form['view_name'] = array(
+    '#type' => 'hidden',
+    '#value' => $search->view_name,
+  );
+  
+  //pass the submitted values through too
+  $form['sid'] = array(
+    '#type' => 'hidden',
+    '#value' => $sid,
+  );
+  
+  $form['search_query'] = array(
+    '#type' => 'hidden',
+    '#value' => urldecode($search_query),
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Yes I\'m sure'),
+  );
+  
+  $form['#suffix'] = '<div class="update-saved-search-cancel-link">' . l(t("Cancel"), $_REQUEST['destination']) . '</div>';
+  
+  return $form;
+}
+
+/**
+ * Access callback for updating saved searches
+ * Check the current user owns the search they're trying to update
+ * or they're the site admin.
+ */
+function views_saved_searches_update_saved_search_access($sid){
+  $access = FALSE;
+  $result = db_fetch_array(db_query("SELECT uid from {views_saved_searches} WHERE sid = %d;", $sid));
+  if($result) {
+    $uid = $result['uid'];
+    global $user;
+    if($uid == $user->uid || user_access('administer users')) {
+      $access = TRUE;
+    }
+  }
+  return $access;
+}
+
+/**
+ * Submit function to update a saved search
+ */
+function views_saved_searches_update_saved_search_form_submit($form_id, $form_values) {
+  global $user;
+  $object = array(
+    'uid' => $form_values['values']['uid'],
+    'sid' => $form_values['values']['sid'],
+    'view_name' => $form_values['values']['view_name'],
+    'search_name' => $form_values['values']['search_name'],
+    'search_query' => $form_values['values']['search_query'],
+    'timestamp' => time(),
+  );
+  
+  $result = drupal_write_record('views_saved_searches', $object, 'sid');
+  $message = ($result) ? t("Updated search: " . $object['search_name']) : t("Failed to update search: " . $object['search_name']);
+  $status = ($result) ? "status" : "error";
+  drupal_set_message($message, $status);
+  $_REQUEST['destination'] = 'user/' . $form_values['values']['uid'] . "/saved-searches";
+  drupal_goto('');
+}
+
+/**
+ * Menu callback to delete saved searches
+ * We show an 'are you sure' page first
+ */
+function views_saved_searches_delete_saved_search_form(&$form_state, $sid) {
+  $search = _views_saved_searches_load_saved_search($sid);
+  global $user;
+  
+  $form = array();
+  
+  $form['#prefix'] = '<div class="delete-saved-search-confirm-message">' . t("Are you sure you want to delete the search !search_name?", array("!search_name" => $search->search_name)) . '</div>';
+  
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $user->uid,
+  );
+  
+  $form['sid'] = array(
+    '#type' => 'hidden',
+    '#value' => intval($sid),
+  );
+  
+  $form['search_name'] = array(
+    '#type' => 'hidden',
+    '#value' => $search->search_name,
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Yes I\'m sure'),
+  );
+  
+  $form['#suffix'] = '<div class="delete-saved-search-cancel-link">' . l(t("Cancel"), 'user/' . $user->uid) . '</div>';
+  
+  return $form;
+}
+
+/**
+ * Access callback for deleting saved searches
+ */
+function views_saved_searches_delete_saved_search_access($sid) {
+  $access = FALSE;
+  $result = db_fetch_array(db_query("SELECT uid from {views_saved_searches} WHERE sid = %d;", $sid));
+  if($result) {
+    $uid = $result['uid'];
+    global $user;
+    if($uid == $user->uid || user_access('administer users')) {
+      $access = TRUE;
+    }
+  }
+  return $access;
+}
+
+/**
+ * Submit function to actually delete a saved search
+ */
+function views_saved_searches_delete_saved_search_form_submit($form_id, $form_values) {
+  $result = db_query("DELETE FROM {views_saved_searches} WHERE sid=%d", $form_values['values']['sid']);
+  if($result) {
+    drupal_set_message("Deleted saved search " . $form_values['values']['search_name'], "status");
+  }
+  else {
+    drupal_set_message("Failed to delete saved search " . $form_values['values']['search_name'], "error");
+  }
+  global $user;
+  $_REQUEST['destination'] = 'user/' .$form_values['values']['uid'] . "/saved-searches";
+  drupal_goto('');
+}
+
+/**
+ * Helper function to load a saved search as an object
+ * given user
+ * @param $sid
+ * @return 
+ * FALSE or the saved search object
+ */
+function _views_saved_searches_load_saved_search($sid) {
+  return db_fetch_object(db_query("SELECT * FROM {views_saved_searches} WHERE sid=%d;", $sid));
+}
+
+/**
+ * Menu callback for admin settings page
+ */
+function views_saved_searches_admin() {
+  $form = array();
+  
+  // Which views should we save?
+  $form['views_saved_searches_view_names'] = array(
+    '#type' => 'select',
+    '#title' => t("Views which can be saved"),
+    '#multiple' => true,
+    '#default_value' => variable_get('views_saved_searches_view_names', array()),
+    '#description' => t("Select which views users can choose to save."),
+    '#options' => views_saved_searches_get_view_list(),
+    '#required' => false,
+  );
+  
+  // Custom submission handler to take this name and
+  // make other variables from it too
+  $form['#submit'][] = 'views_saved_searches_admin_submit';
+  
+  return system_settings_form($form);
+}
+
+/**
+ * Helper function to build a list of views that can be
+ * selected in the admin settings
+ */
+function views_saved_searches_get_view_list() {
+  $view_list = array();
+  
+  $all_views = views_get_all_views();
+  if(count($all_views) > 0) {
+    foreach($all_views as $view) {
+      $displays = array();
+      // We need to determine which displays offer exposed filters
+      // either these will be configured on the display itself
+      // or they will be on the default display and will be
+      // inherited.
+
+      // Is there a default display with exposed filters?
+      $exposed_default = FALSE;
+      if(isset($view->display['default']) && isset($view->display['default']->display_options['filters'])) {
+        foreach ($view->display['default']->display_options['filters'] as $filter) {
+          if ($filter['exposed'] == TRUE) {
+            $exposed_default = TRUE;
+          }
+        }
+      }
+      // Are their other displays with exposed filters, or displays which
+      // inherit the default's?
+      foreach($view->display as $display) {
+        // @TODO: Can we do this with views other than page views?
+        if($display->display_plugin == "page"){
+          // Are there other (non-default) filters that are exposed?
+          $exposed = FALSE;
+          
+          if(isset($display->display_options['filters']) && !$display->display_options['filters']['defaults']['filters']) {
+            foreach ($display->display_options['filters'] as $filter) {
+              if ($filter['exposed'] == TRUE) {
+                $exposed = TRUE;
+              }
+            }
+          }
+          else {
+            // Must be using default filters
+            $exposed = $exposed_default;
+          }
+          
+          if($exposed) {
+            $displays[$view->name . "_" . $display->id] = t($display->display_title);
+          }
+        }
+      }
+      if(count($displays) > 0) {
+        $view_list[$view->name] = $displays;
+      }
+    }
+  }
+  
+  return $view_list;
+}
+
+function views_saved_searches_admin_submit($form, &$form_state) {
+  // Turn the view names array into one of form ids, system_settings_form
+  // will handle saving the view names themselves for us
+  if($form_state['values']['op'] == t("Reset to defaults") || !isset($form_state['values']['views_saved_searches_view_names'])) {
+    variable_set("views_saved_searches_form_ids", array());
+  }
+  else {
+    $form_ids = array();
+    foreach($form_state['values']['views_saved_searches_view_names'] as $view_name) {
+      $form_id = str_replace("_", "-", $view_name);
+      $form_ids[$form_id] = $form_id;
+    }
+    variable_set("views_saved_searches_form_ids", $form_ids);
+  }
+}

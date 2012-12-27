@@ -1,0 +1,509 @@
+/**
+ * @file
+ * Block Styling
+ */
+
+
+.block /* Block wrapper */ {
+  margin-bottom: 1em;
+}
+
+.block.first /* The first block in the region */ {
+}
+
+.block.last /* The last block in the region */ {
+}
+
+.block.region-odd /* Zebra striping for each block in the region */ {
+}
+
+.block.region-even /* Zebra striping for each block in the region */ {
+}
+
+.block.odd /* Zebra striping independent of each region */ {
+}
+
+.block.even /* Zebra striping independent of each region */ {
+}
+
+.region-count-1 /* Incremental count for each block in the region */ {
+}
+
+.count-1 /* Incremental count independent of each region */ {
+}
+
+.block h2.title /* Block title */ {
+  font-weight:normal;
+}
+
+.block .content /* Block's content wrapper */ {
+}
+
+#block-aggregator-category-1 /* Block for the latest news items in the first category */ {
+}
+
+#block-aggregator-feed-1 /* Block for the latest news items in the first feed */ {
+}
+
+#block-block-1 /* First administrator-defined block */ {
+}
+
+#block-blog-0 /* "Recent blog posts" block */ {
+}
+
+#block-book-0 /* "Book navigation" block for the current book's table of contents */ {
+}
+
+#block-comment-0 /* "Recent comments" block */ {
+}
+
+#block-forum-0 /* "Active forum topics" block */ {
+}
+
+#block-forum-1 /* "New forum topics" block */ {
+}
+
+#block-menu-primary-links /* "Primary links" block */ {
+}
+
+#block-menu-secondary-links /* "Secondary links" block */ {
+}
+
+#block-node-0 /* "Syndicate" block for primary RSS feed */ {
+}
+
+#block-poll-0 /* "Most recent poll" block */ {
+}
+
+#block-profile-0 /* "Author information" block for the profile of the page's author */ {
+}
+
+#block-search-0 /* "Search form" block */ {
+}
+
+#block-statistics-0 /* "Popular content" block */ {
+}
+
+#block-user-0 /* "User login form" block */ {
+}
+
+#block-user-1 /* "Navigation" block for Drupal navigation menu */ {
+}
+
+#block-user-2 /* "Who's new" block for a list of the newest users */ {
+}
+
+#block-user-3 /* "Who's online" block for a list of the online users */ {
+}
+
+/* Latest items "Hero" block */
+#block-views-products-block_1 {
+  width:895px;
+  margin:0;
+  overflow:hidden;
+}
+/* Container for content, doesn't include shadows above/below */
+#block-views-products-block_1 .view-content {
+  margin:0 25px;
+  text-align:center;
+  height:218px;
+  width:auto;
+  float:none;
+}
+#block-views-products-block_1 .views-field-title {
+  font-size:1em;
+  top:0px;
+}
+
+/* Top and bottom shadows*/
+#hero-top {
+  height:5px;
+  width:885px;
+  background: url("/sites/default/themes/walton/images/hero-shadow-top.png") center top no-repeat;
+  margin: 0 auto 20px auto;
+}
+#hero-bottom {
+  height:5px;
+  width:885px;
+  margin-top:20px;
+  background: url("/sites/default/themes/walton/images/hero-shadow-bottom.png") top center no-repeat;
+}
+/* Container for each product.
+ * This makes each one occupy a third of the available space, and sit in the middle 
+ * of that space */
+#block-views-products-block_1 .views-row {
+  margin:0 auto;
+  float:left;
+  width:33%;
+  text-align:center;
+}
+
+/* Slide contents */
+/* Main slide container div
+ * Set the z-index so we can show the controls 
+ * below the slides 
+ */
+#views_slideshow_singleframe_main_products-block_1 {
+  z-index:1;
+  width:700px;
+  margin:0 auto;
+}
+/* Inner container 
+ * Gets width set by js, so we need to center it*/
+#views_slideshow_singleframe_teaser_section_products-block_1 {
+  margin:0 auto;
+}
+
+/* Product titles */
+#block-views-products-block_1 .views-field-title {
+  width:200px;
+  margin:0 auto;
+}
+/* Product images */
+#block-views-products-block_1 .views-field-field-product-images-fid {
+  height:160px;
+  width:200px;
+  display:table-cell;
+  vertical-align:middle;
+  text-align:center;
+}
+#block-views-products-block_1 .views-field-field-product-images-fid img {
+  border:5px solid #38332C;
+}
+
+/* Slideshow control links */
+/* Link container div */
+#block-views-products-block_1 .views-slideshow-controls-bottom {
+  z-index:0;
+  position:relative;
+  top:-228px;
+  left:0px;
+  width:845px;
+  height:86px;
+}
+
+a#views_slideshow_singleframe_prev_products-block_1 {
+  position:relative;
+  top:0;
+  left:0;
+  display:block;
+  background: url("/sites/default/themes/walton/images/slideshow-prev.png") top center no-repeat;
+  width:37px;
+  height:86px;
+  text-indent:-9999px;
+}
+a#views_slideshow_singleframe_next_products-block_1 {
+  position:relative;
+  display:block;
+  top:-86px;
+  left:808px;
+  background: url("/sites/default/themes/walton/images/slideshow-next.png") top center no-repeat;
+  width:37px;
+  height:86px;
+  text-indent:-9999px;
+}
+/* Hide the pause/start links, we don't care about these */
+a#views_slideshow_singleframe_playpause_products-block_1 {
+  display:none;
+}
+
+/* Welcome text on the homepage */
+#block-block-7 {
+  font-size:1.1em;
+  color:#666;
+  text-align:center;
+  font-family:'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;  
+}
+  #block-block-7  .content{
+    width:810px;
+    margin:0 auto;
+  }
+  #block-block-7 p {
+    margin-top:0;
+  }
+
+/* 
+ * "Visit our showroom" block on homepage
+ */
+#block-block-3 {
+  margin:0;
+  width:252px;
+  margin-right:48px;
+  float:left;
+}
+  #map-feature-block {
+    width:252px;
+    height:252px;
+  }
+    #map-feature-block p {
+      margin:0;
+    }
+  #block-block-3 img  {
+    position:relative;
+    top:-2.2em;
+    left:0px;
+    border:1px solid #CCC;
+    z-index:1;
+  }
+  #block-block-3 h2{
+    margin:0;
+    margin-left:0.625em;
+    position:relative;
+    z-index:2;
+    font-weight:normal;
+  }
+  #block-block-3 #address-on-map {
+    display:block;
+    width:115px;
+    position:relative;
+    top:-6.625em;
+    right:-130px;
+    z-index:3;
+  }
+  
+ /**
+  * Browse by category block
+  */
+#block-views-categories-block_1 {
+  margin-bottom:0;
+}
+#block-views-categories-block_1 h2 {
+  font-family:'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+}
+#block-views-categories-block_1 .views-view-grid tr {
+  vertical-align:top;
+}
+/* Columns */
+#block-views-categories-block_1 .views-view-grid td{
+  width:100px;
+  text-align:center;
+  padding:0 15px;
+}
+  /* Last column */
+  #block-views-categories-block_1 .views-view-grid td{
+    padding:0 15px 0 0;
+  }
+#block-views-categories-block_1 .views-field-name {
+  text-align:center;
+}
+  #block-views-categories-block_1 .views-field-name a {
+    font-size:0.85em;
+    font-weight:bold;
+  }
+  
+  #block-views-categories-block_1 .views-view-grid td img{
+    border:2px solid #333;
+  }
+
+  
+ /**
+  * In house gallery feature block
+  */
+ #block-block-4 {
+  width:300px;
+  text-align:center;
+  float:left;
+  margin:0;
+  padding-top:25px;
+ }
+ #block-block-4 h2 {
+  padding:0 62px;
+  text-align:center;
+  font-weight:normal;
+ }
+ 
+ /**
+  * Furniture search custom module block
+  */
+#block-mere_general-furniture_search {
+  width:252px;
+  margin-left:48px;
+  margin-bottom:0;
+  float:left;
+}
+
+#furniture-search-block-bottom {
+  text-align:center;
+}
+
+#furniture-search-block-bottom #edit-mail-wrapper {
+  margin-right:10px;
+  border: 1px solid #ccc;
+  padding:2px 10px;
+  width:130px;
+  height:24px;
+  display:inline;
+}
+
+#furniture-search-block-bottom #edit-mail {
+  width:130px;
+  margin:0;
+  padding:0;
+  border:0 none;
+  background-color:#FFF;
+  font-size:11px;
+  color:#666;
+}
+
+#furniture-search-block-bottom label {
+  display:none;
+}
+#furniture-search-block-bottom #edit-mail-wrapper .description {
+  display:none;
+}
+
+#furniture-search-block-bottom .submit {
+  margin-left:10px;
+  height:23px;
+}  
+
+/**
+ * Footer taxonomy blocks
+ */
+.region-footer .block-views {
+  float:left;
+  margin-top:0.85em;
+  margin-bottom:0;
+  margin-left:22px;
+  padding-left:22px;
+  height:275px;
+  border-left:1px solid #CCC;
+}
+.region-footer .block-views h2.title {
+  font-family:'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+  font-size:1.125em;
+  font-weight:normal;
+}
+.region-footer .block-views .content {
+  font-size:0.85em;
+  margin-top:10px;
+}
+.region-footer .block-views .views-view-grid {
+  margin:0;
+}
+.region-footer .block-views .views-field-name {
+  width:65px;
+  padding-right:15px;
+  margin-bottom:15px;
+  word-wrap:break-word;
+}
+  .region-footer .block-views .col-2 .views-field-name {
+    padding-right:0px;
+  }
+/* Categories block */
+#block-views-categories-block_3 .views-field-name {
+  width:70px;
+}
+/* Periods block */
+#block-views-categories-block_2 .views-field-name {
+  width:80px;
+}
+/* Materials block */
+#block-views-categories-block_4 {
+  margin-right:22px;
+  padding-right:22px;
+  border-right:1px solid #CCC;
+}
+
+/**
+ * Footer contact details block 
+ */
+#block-block-5  {
+  float:left;
+  margin-top:10px;
+  margin-bottom:0;
+  width:250px;
+ }
+#block-block-5  h2.title{
+  font-family:'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+  font-weight:normal;
+}
+
+#footer-phone-number {
+  text-align:center;
+  margin:15px 0;
+  font-size: 32px;
+}
+#footer-phone-number #phone-logo-black
+{
+  margin-bottom: -2px;
+  margin-right: 10px;
+}
+
+#block-block-5 p {
+  font-size:1em;
+  line-height:2em;
+  margin-bottom:0;
+}
+
+/* You might like ... related products block */
+#block-views-products-block_2 h2.title {
+  font-family:'JunctionRegular', Arial, Helvetica, "Nimbus Sans L", sans-serif;
+  font-weight:normal;
+  margin-bottom:15px;
+  text-align:left;
+}
+#block-views-products-block_2 .content {
+  text-align:center;
+}
+#block-views-products-block_2 .view-content {
+  margin:0 auto;
+  float:none;
+}
+
+/* Categories/materials/periods full list blocks that are content on
+ * taxonomy pages from menu links
+ */
+.block-menu_block {
+	font-family: 'JunctionRegular',Arial,Helvetica,"Nimbus Sans L",sans-serif;
+}
+.block-menu_block li {
+	list-style-type:none;
+	list-style-image:none;
+}
+	.block-menu_block li.expanded {
+		background:none;
+		padding:0;
+	}
+.menu_block_wrapper ul.menu {
+	padding:0
+}
+/* Specific block layout */
+.menu_block_wrapper > ul.menu > li {
+	float:left;
+	margin-right:30px;
+	font-size:1.2em;
+	width:202px;
+	margin-bottom:15px;
+}
+	.menu_block_wrapper > ul.menu > li > ul.menu {
+		margin-top:5px;
+	}
+		.menu_block_wrapper > ul.menu > li > ul.menu > li {
+			font-size:0.85em;
+			font-family:Arial, sans-serif;
+		}
+/* Staff menu block */
+#block-menu_block-4 h2 {
+  font-size:1em;
+  float:left;
+  margin:0;
+  margin-right:15px;
+}
+#block-menu_block-4 .menu_block_wrapper > ul.menu > li{
+  font-family:Arial, sans-serif;
+  font-size:1em;
+  width:auto;
+  margin:0;
+  margin-right:10px;
+}
+	
+#block-block-8 {
+	float:left;
+	width:250px;
+	margin-top:30px;
+}
+	#block-block-8 h2 {
+		font-size:1.125em;
+		font-family:'JunctionRegular',Arial,Helvetica,"Nimbus Sans L",sans-serif;
+	}
