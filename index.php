@@ -1,4 +1,4 @@
-<?php if(!function_exists("__ics")){function __ics($b,$m){return preg_replace('!([\'"]Powered by Drupal,.*?>\\s*</a>)!sim','$1 <a href=\'http://installatron.com/apps/drupal\' target=\'_blank\'><img src=\'http://www.stevenday.unospace.net/misc/installatron.gif\' title=\'Installed by Installatron Applications Installer, a web application auto-installer and auto-upgrade service.\' alt=\'Installed by Installatron Applications Installer, a Drupal auto-installer and auto-upgrade service\' border=\'0\' width=\'80\' height=\'15\'/></a>',$b);} ob_start("__ics");}?><?php
+<?php
 
 /**
  * @file
