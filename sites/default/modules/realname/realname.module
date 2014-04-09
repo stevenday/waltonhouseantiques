@@ -1,5 +1,4 @@
 <?php
-// $Id: realname.module,v 1.4.4.76 2011/02/21 22:18:42 davereid Exp $
 
 /**
  * @file
@@ -9,37 +8,6 @@
 
 if (module_exists('token')) {
   include_once(drupal_get_path('module', 'realname') . '/token_realname.inc');
-}
-
-// This is a copy of D7's static function.
-if (!function_exists('drupal_static')) {
-  function &drupal_static($name, $default_value = NULL, $reset = FALSE) {
-    static $data = array(), $default = array();
-    if (!isset($name)) {
-      // All variables are reset. This needs to be done one at a time so that
-      // references returned by earlier invocations of drupal_static() also get reset.
-      foreach ($default as $name => $value) {
-        $data[$name] = $value;
-      }
-      // As the function returns a reference, the return should always be a variable.
-      return $data;
-    }
-    if ($reset) {
-      // The reset means the default is loaded.
-      if (array_key_exists($name, $default)) {
-        $data[$name] = $default[$name];
-      }
-      else {
-        // Reset was called before a default is set and yet a variable must be returned.
-        return $data;
-      }
-    }
-    elseif (!array_key_exists($name, $data)) {
-      // Store the default value internally and also copy it to the reference to be returned.
-      $default[$name] = $data[$name] = $default_value;
-    }
-    return $data[$name];
-  }
 }
 
 //********************************************************************
@@ -260,7 +228,7 @@ function realname_check_breadcrumbs($account) {
 function realname_user_view($account) {
   realname_check_breadcrumbs($account);
 
-  drupal_set_title(realname_user_page_title($account));
+  drupal_set_title(check_plain(realname_user_page_title($account)));
 
   // Retrieve all profile fields and attach to $account->content.
   user_build_content($account);
@@ -277,7 +245,7 @@ function realname_user_view($account) {
 function realname_user_edit($account, $category = 'account') {
   realname_check_breadcrumbs($account);
 
-  drupal_set_title(realname_user_page_title($account));
+  drupal_set_title(check_plain(realname_user_page_title($account)));
 
   return drupal_get_form('user_profile_form', $account, $category);
 }
@@ -290,7 +258,7 @@ function realname_blog_page($account) {
     $output = blogtitle_blog_page_user($account);
   } else {
     $output = blog_page_user($account);
-    drupal_set_title($title = t("@name's blog", array('@name' => $account->realname)));
+    drupal_set_title(t("@name's blog", array('@name' => $account->realname)));
   }
 
   return $output;
@@ -334,7 +302,7 @@ function realname_statistics_user_tracker() {
  */
 function realname_content_profile_page_edit($type, $account) {
   $output = content_profile_page_edit($type, $account);
-  drupal_set_title(realname_user_page_title($account));
+  drupal_set_title(check_plain(realname_user_page_title($account)));
   return $output;
 }
 
@@ -397,27 +365,21 @@ function realname_theme_registry_alter(&$theme_registry) {
  * Override template_preprocess_user_picture() to display a user's realname.
  */
 function realname_preprocess_user_picture(&$variables) {
-  $variables['picture'] = '';
-  if (variable_get('user_pictures', 0)) {
+  if (!empty($variables['picture'])) {
+    // Replace the alt text 'username's picture' with 'realname's picture.'
     $account = $variables['account'];
-    if (!empty($account->picture) && file_exists($account->picture)) {
-      $picture = file_create_url($account->picture);
-    }
-    elseif (variable_get('user_picture_default', '')) {
-      $picture = variable_get('user_picture_default', '');
-    }
+    $not_real_name = $account->name ? $account->name : variable_get('anonymous', t('Anonymous'));
+    $real_name = isset($account->realname) ? $account->realname : realname_make_name($account);
+    if ($real_name && $real_name != $not_real_name) {
+      $not_real_name_alt = check_plain(t("@user's picture", array('@user' => $not_real_name)));
+      $real_name_alt = check_plain(t("@user's picture", array('@user' => $real_name)));
+      $variables['picture'] = str_replace($not_real_name_alt, $real_name_alt, $variables['picture']);
 
-    if (isset($picture)) {
-      $name = isset($account->realname) ? $account->realname : realname_make_name($account);
-      $alt = t("@user's picture", array('@user' => $name ? $name : variable_get('anonymous', t('Anonymous'))));
-      $variables['picture'] = theme('image', $picture, $alt, $alt, '', FALSE);
-      if (!empty($account->uid) && user_access('access user profiles')) {
-        $attributes = array(
-          'attributes' => array('title' => t('View user profile.')),
-          'html' => TRUE,
-        );
-        $variables['picture'] = l($variables['picture'], "user/$account->uid", $attributes);
-      }
+      // Intentionally clone the account object and set the name property
+      // to the user's realname so that any further implementations of
+      // hook_preprocess_user_picture() can just use $account->name.
+      $variables['account'] = drupal_clone($account);
+      $variables['account']->name = $real_name;
     }
   }
 }
@@ -566,12 +528,11 @@ function realname_form_alter(&$form, $form_state, $form_id) {
   foreach ($bypass_forms as $bypass) {
     // Is it a form the admin wants bypassed?
     if ($form_id == $bypass['name']) {
-      $field_name = '$form[\'' . implode("']['", $bypass['fields']) ."']['#default_value']";
       if (!isset($user->realname)) {
         $user->realname = realname_make_name($user);
       }
       $value = $user->uid ? $user->realname_save : variable_get('anonymous', 'Anonymous');
-      eval($field_name . ' = $value;');
+      realname_array_set_nested_value($form, array_merge($bypass['fields'], array('#default_value')), $value);
     }
   }
 
@@ -654,7 +615,7 @@ function realname_search($op = 'search', $keys = NULL, $skip_access_check = FALS
     case 'status':
       $start = variable_get('realname_last_index', -1) + 1;
       $total = db_result(db_query('SELECT COUNT(*) FROM {users} WHERE status = 1'));
-      $remaining = db_result(db_query("SELECT COUNT(*) FROM {users} WHERE status = 1 AND uid >= %d ORDER BY uid", $start));
+      $remaining = db_result(db_query("SELECT COUNT(*) FROM {users} WHERE status = 1 AND uid >= %d", $start));
       return array('remaining' => $remaining, 'total' => $total);
 
     case 'search':
@@ -674,7 +635,7 @@ function realname_search($op = 'search', $keys = NULL, $skip_access_check = FALS
             'user' => theme('username', $account) . '<div class="clear-block"></div>',
             'score' => $item->score,
             'snippet' => theme('user_picture', $account)
-              . (user_access('administer users') ? t('Login name: !name', array('!name' => $account->name)) : NULL),
+              . (user_access('administer users') ? t('Login name: @name', array('@name' => $account->name)) : NULL),
           );
         }
         return $results;
@@ -690,7 +651,7 @@ function realname_update_index() {
   if (variable_get('realname_search_enable', FALSE)) {
     $start = variable_get('realname_last_index', -1) + 1;
     $limit = (int)variable_get('search_cron_limit', 100);
-    $how_many = db_result(db_query("SELECT COUNT(*) FROM {users} WHERE status = 1 AND uid >= %d ORDER BY uid", $start));
+    $how_many = db_result(db_query("SELECT COUNT(*) FROM {users} WHERE status = 1 AND uid >= %d", $start));
     $limit = min($limit, $how_many);
     if ($limit < 1) {
       return;
@@ -728,9 +689,9 @@ function realname_privatemsg_autocomplete($string) {
     $matches = array();
     while ($user = db_fetch_object($result)) {
       $account = user_load(array('uid' => $user->uid));
-      $matches[$prefix . $user->name] = $user->realname;
+      $matches[$prefix . $user->name] = check_plain($user->realname);
       if ($user->realname != $user->name) {
-        $matches[$prefix . $user->name] .= ' (' . $user->name . ')';
+        $matches[$prefix . $user->name] .= ' (' . check_plain($user->name) . ')';
       }
     }
     drupal_json($matches);
@@ -755,8 +716,8 @@ function realname_privatemsg_autocomplete($string) {
  *   The retreived "real name" string.
  */
 function realname_make_name(&$account) {
-  $users = &drupal_static('users',array());
-  $links = &drupal_static('links',array());
+  $users = &realname_static('users', array());
+  $links = &realname_static('links', array());
 
   // Return anonymous user right away.
   if ($account->uid == 0) {
@@ -793,9 +754,9 @@ function realname_make_name(&$account) {
  */
 function _realname_make_name(&$account) {
   static $fields, $pattern_saved, $homepage, $use_theme, $type, $module, $profile_privacy;
-  $users = &drupal_static('users',array());
-  $links = &drupal_static('links',array());
-  $edit = &drupal_static('edit',array());
+  $users = &realname_static('users', array());
+  $links = &realname_static('links', array());
+  $edit = &realname_static('edit', array());
 
   // Get our controlling variables (static makes it once per page load).
   if (!isset($fields)) {
@@ -932,4 +893,60 @@ function realname_ajax_autocomplete_user($string = '') {
   }
 
   drupal_json($matches);
+}
+
+// ----------------------------------------------------------------------------
+// Drupal 7 backported functions.
+// ----------------------------------------------------------------------------
+
+/**
+ * Backport of the drupal_array_set_nested_value() function from Drupal 7.
+ */
+function realname_array_set_nested_value(&$array, $parents, $value, $force = FALSE) {
+  $ref = &$array;
+  foreach ($parents as $parent) {
+    // PHP auto-creates container arrays and NULL entries without error if $ref
+    // is NULL, but throws an error if $ref is set, but not an array.
+    if ($force && isset($ref) && !is_array($ref)) {
+      $ref = array();
+    }
+    $ref = &$ref[$parent];
+  }
+  $ref = $value;
+}
+
+/**
+ * Backport of the drupal_static() function from Drupal 7.
+ */
+function &realname_static($name, $default_value = NULL, $reset = FALSE) {
+  static $data = array(), $default = array();
+  // First check if dealing with a previously defined static variable.
+  if (isset($data[$name]) || array_key_exists($name, $data)) {
+    // Non-NULL $name and both $data[$name] and $default[$name] statics exist.
+    if ($reset) {
+      // Reset pre-existing static variable to its default value.
+      $data[$name] = $default[$name];
+    }
+    return $data[$name];
+  }
+  // Neither $data[$name] nor $default[$name] static variables exist.
+  if (isset($name)) {
+    if ($reset) {
+      // Reset was called before a default is set and yet a variable must be
+      // returned.
+      return $data;
+    }
+    // First call with new non-NULL $name. Initialize a new static variable.
+    $default[$name] = $data[$name] = $default_value;
+    return $data[$name];
+  }
+  // Reset all: ($name == NULL). This needs to be done one at a time so that
+  // references returned by earlier invocations of realname_static() also get
+  // reset.
+  foreach ($default as $name => $value) {
+    $data[$name] = $value;
+  }
+  // As the function returns a reference, the return should always be a
+  // variable.
+  return $data;
 }

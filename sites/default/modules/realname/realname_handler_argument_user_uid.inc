@@ -1,5 +1,4 @@
 <?php
-// $Id: realname_handler_argument_user_uid.inc,v 1.1.2.2 2009/04/22 00:44:47 nancyw Exp $
 
 /**
  * @file

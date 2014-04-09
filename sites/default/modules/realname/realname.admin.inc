@@ -1,5 +1,4 @@
 <?php
-// $Id: realname.admin.inc,v 1.1.2.11 2010/10/28 04:57:27 davereid Exp $
 
 /**
  * @file

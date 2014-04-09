@@ -1,4 +1,3 @@
-// $Id: hierarchical_select.js,v 1.104 2010/08/26 15:28:58 wimleers Exp $
 
 (function($) {
 
@@ -501,6 +500,7 @@ Drupal.HierarchicalSelect.update = function(hsid, updateType, settings) {
           // The selection of this hierarchical select has changed!
           Drupal.HierarchicalSelect.triggerEvents(hsid, 'change-hierarchical-select', settings);
         });
+        return;
       }
       break;
     

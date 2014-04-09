@@ -1,5 +1,4 @@
 <?php
-// $Id: realname.views.inc,v 1.1.2.3 2009/10/08 19:43:07 nancyw Exp $
 /**
  * @file
  * Realname VIEW declarations.

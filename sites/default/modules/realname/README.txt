@@ -1,4 +1,3 @@
-; $Id: README.txt,v 1.2.4.1 2008/10/20 18:29:36 nancyw Exp $
 
 The RealName module allows the admin to choose fields from the user profile
 that will be used to add a "realname" element (method) to a user object.

@@ -1,5 +1,4 @@
 <?php
-// $Id: realname_content_profile.inc,v 1.1.2.8 2010/05/26 20:34:45 nancyw Exp $
 /**
  * @file
  * Realname module support for Content Profile module.

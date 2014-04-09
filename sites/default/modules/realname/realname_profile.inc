@@ -1,5 +1,4 @@
 <?php
-// $Id: realname_profile.inc,v 1.1.2.4 2009/07/07 15:33:44 nancyw Exp $
 /**
  * @file
  * Realname module support for Profile (core) module.
