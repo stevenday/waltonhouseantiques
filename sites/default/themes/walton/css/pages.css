@@ -54,10 +54,12 @@ body {
  * Admin menu - make it bigger for older eyes
  */
 body #admin-menu {
-	font-size:14px;
+  font-size:14px;
+  /* Set to be 1 higher than the z-index of the main menu */
+  z-index: 10001;
 }
 body.admin-menu {
-	margin-top:30px !important;
+  margin-top:30px !important;
 }
 
 /*

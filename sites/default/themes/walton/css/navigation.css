@@ -19,6 +19,7 @@ li a.active {
 #navigation {
   background-color:#DCDB81;
   position:relative;
+  /* This is set to be 1 higher than the z-index of the big image on products */
   z-index:10000;
 }
 
