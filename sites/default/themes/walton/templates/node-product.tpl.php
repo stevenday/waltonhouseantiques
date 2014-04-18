@@ -87,11 +87,30 @@
         <?php endif; ?>
       </div>
       <div id="product-top-right">
-        <?php print $field_product_price_rendered; ?>
+        <?php if ($node->field_sold[0]['value'] == '1'): ?>
+            <?php 
+                /*
+                 * We're copying the way $field_product_price_rendered will output
+                 * here so that it looks the same, bit lazy, sorry.
+                 */
+            ?>
+            <div class="field field-type-number-decimal field-field-product-price">
+                <div class="field-items">
+                    <div class="field-item odd">
+                        £Sold
+                    </div>
+                </div>
+            </div> 
+        <?php else: ?>
+	    <?php print $field_product_price_rendered; ?>
+        <?php endif; ?>
         <?php print $links ?>
       </div>
     </div>
     <div class="content">
+      <?php if ($node->field_sold[0]['value'] == '1'): ?>
+         <p><strong>Sorry, this product is now sold, please take a look at the similar items below for more of our current stock like this.</strong></p>
+      <?php endif; ?>
       <?php print check_markup($node->content['body']['#value']); ?>
     </div>
     
